@@ -1,17 +1,23 @@
 package org.ars.sla3dprinter.view;
 
+import java.awt.Font;
+import java.awt.SystemColor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
-import java.awt.SystemColor;
-import java.awt.Font;
 
-public class MainWindow {
+public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
     private static final int START_POS_Y = 100;
     private static final int WIDTH = 180;
     private static final int HEIGHT = 80;
+
+    private static final String ACTION_HALF_TURN_CW = "half_turn_cw";
+    private static final String ACTION_HALF_TURN_CCW = "half_turn_ccw";
 
     private JFrame frmSladPrinter;
 
@@ -39,12 +45,16 @@ public class MainWindow {
         lblStepMotor.setHorizontalAlignment(SwingConstants.CENTER);
         lblStepMotor.setBounds(6, 6, 246, 29);
         frmSladPrinter.getContentPane().add(lblStepMotor);
-        
+
         JButton btnCwHalfTurn = new JButton("CW half turn");
+        btnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
+        btnCwHalfTurn.addActionListener(this);
         btnCwHalfTurn.setBounds(6, 48, 117, 29);
         frmSladPrinter.getContentPane().add(btnCwHalfTurn);
-        
+
         JButton btnCcwHalfTurn = new JButton("CCW half turn");
+        btnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
+        btnCcwHalfTurn.addActionListener(this);
         btnCcwHalfTurn.setBounds(135, 48, 117, 29);
         frmSladPrinter.getContentPane().add(btnCcwHalfTurn);
 
@@ -53,4 +63,19 @@ public class MainWindow {
     public void show() {
         frmSladPrinter.setVisible(true);
     }
+
+    @Override
+    public void actionPerformed(ActionEvent ae) {
+        final String action = ae.getActionCommand();
+        if (ACTION_HALF_TURN_CW.equals(action)) {
+            System.out.println("Half turn Clockwise");
+        }
+        else if (ACTION_HALF_TURN_CCW.equals(action)) {
+            System.out.println("Half turn Counter-Clockwise");
+        }
+        else {
+            System.out.println("Unknown action: " + action);
+        }
+    }
+
 }
