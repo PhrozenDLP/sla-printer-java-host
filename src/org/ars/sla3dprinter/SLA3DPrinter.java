@@ -2,6 +2,7 @@ package org.ars.sla3dprinter;
 
 import java.awt.EventQueue;
 
+import org.ars.sla3dprinter.util.Utils;
 import org.ars.sla3dprinter.view.MainWindow;
 
 public class SLA3DPrinter {
@@ -12,8 +13,9 @@ public class SLA3DPrinter {
                 try {
                     MainWindow window = new MainWindow();
                     window.show();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (Exception ex) {
+                    Utils.log(ex);
+                    ex.printStackTrace();
                 }
             }
         });
