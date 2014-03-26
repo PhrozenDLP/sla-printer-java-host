@@ -12,6 +12,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
+import jssc.SerialPort;
+import jssc.SerialPortException;
 import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Utils;
@@ -25,6 +27,8 @@ public class MainWindow implements ActionListener {
     private static final String ACTION_HALF_TURN_CW     = "half_turn_cw";
     private static final String ACTION_HALF_TURN_CCW    = "half_turn_ccw";
 
+    private static final byte[] BYTE_HALF_TURN_CW   = "l".getBytes();
+    private static final byte[] BYTE_HALF_TURN_CCW  = "r".getBytes();
 
     private JFrame frmSladPrinter;
 
@@ -108,15 +112,38 @@ public class MainWindow implements ActionListener {
                 return;
             }
 
-            final String action = ae.getActionCommand();
-            if (ACTION_HALF_TURN_CW.equals(action)) {
-                Utils.log("Half turn Clockwise");
-            }
-            else if (ACTION_HALF_TURN_CCW.equals(action)) {
-                Utils.log("Half turn Counter-Clockwise");
-            }
-            else {
-                Utils.log("Unknown action: " + action);
+            SerialPort serialPort = new SerialPort(mSelectedPort);
+            try {
+                // Open serial port
+                serialPort.openPort();
+                // Set params. Also you can set params by this string:
+                // serialPort.setParams(9600, 8, 1, 0);
+                serialPort.setParams(SerialPort.BAUDRATE_9600,
+                        SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
+                        SerialPort.PARITY_NONE);
+
+                final String action = ae.getActionCommand();
+                if (ACTION_HALF_TURN_CW.equals(action)) {
+                    Utils.log("Half turn Clockwise");
+                    serialPort.writeBytes(BYTE_HALF_TURN_CW);
+                }
+                else if (ACTION_HALF_TURN_CCW.equals(action)) {
+                    Utils.log("Half turn Counter-Clockwise");
+                    serialPort.writeBytes(BYTE_HALF_TURN_CCW);
+                }
+                else {
+                    Utils.log("Unknown action: " + action);
+                }
+            } catch (SerialPortException ex) {
+                Utils.log(ex);
+            } finally {
+                if (serialPort.isOpened()) {
+                    try {
+                        serialPort.closePort();
+                    } catch (SerialPortException ex) {
+                        Utils.log(ex);
+                    }
+                }
             }
         } else {
             Utils.log("Unknown source: " + source);
