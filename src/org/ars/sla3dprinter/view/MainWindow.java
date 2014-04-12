@@ -10,10 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -37,6 +40,7 @@ public class MainWindow implements ActionListener {
     private static final String ACTION_HALF_TURN_CCW    = "half_turn_ccw";
     private static final String ACTION_OPEN_PORT        = "open_port";
     private static final String ACTION_CLOSE_PORT       = "close_port";
+    private static final String ACTION_OPEN_PROJECT     = "open_project";
 
     private static final byte[] BYTE_HALF_TURN_CW   = "l".getBytes();
     private static final byte[] BYTE_HALF_TURN_CCW  = "r".getBytes();
@@ -209,19 +213,16 @@ public class MainWindow implements ActionListener {
         mFrmSla3dPrinter.getContentPane().add(projectPane);
         projectPane.setLayout(null);
 
-        JLabel lblProject = new JLabel("Project:");
-        lblProject.setBounds(6, 22, 47, 28);
-        projectPane.add(lblProject);
-
         mLblProject = new JLabel("");
         mLblProject.setHorizontalAlignment(SwingConstants.LEFT);
-        mLblProject.setBounds(65, 22, 217, 28);
+        mLblProject.setBounds(6, 22, 276, 28);
         mLblProject.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         projectPane.add(mLblProject);
 
         mBtnOpenProject = new JButton("Open Project");
         mBtnOpenProject.setBounds(144, 55, 138, 33);
-        mBtnOpenProject.setActionCommand("open_project");
+        mBtnOpenProject.setActionCommand(ACTION_OPEN_PROJECT);
+        mBtnOpenProject.addActionListener(this);
         projectPane.add(mBtnOpenProject);
     }
 
@@ -294,11 +295,37 @@ public class MainWindow implements ActionListener {
                     writeToPort(mSerialPort, BYTE_HALF_TURN_CCW);
                 }
             }
+            else if (ACTION_OPEN_PROJECT.equals(action)) {
+                openFileChooser();
+            }
             else {
                 Utils.log("Unknown action: " + action);
             }
         } else {
             Utils.log("Unknown source: " + source);
+        }
+    }
+
+    private void openFileChooser() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Open project");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        // disable the "All files" option.
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedDir = chooser.getSelectedFile();
+            String path = null;
+            try {
+                path = selectedDir.getCanonicalPath();
+            } catch (IOException e) {
+                path = selectedDir.getName();
+                e.printStackTrace();
+            }
+            mLblProject.setText(selectedDir.getName());
+            mLblProject.setToolTipText(path);
+        } else {
+            System.out.println("No Selection ");
         }
     }
 
