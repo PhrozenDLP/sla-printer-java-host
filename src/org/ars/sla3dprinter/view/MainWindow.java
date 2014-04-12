@@ -1,16 +1,23 @@
 package org.ars.sla3dprinter.view;
 
 import java.awt.Color;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -19,14 +26,12 @@ import jssc.SerialPortException;
 import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Utils;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
     private static final int START_POS_Y = 100;
-    private static final int WIDTH = 200;
-    private static final int HEIGHT = 90;
+    private static final int WIDTH = 500;
+    private static final int HEIGHT = 100;
 
     private static final String ACTION_HALF_TURN_CW     = "half_turn_cw";
     private static final String ACTION_HALF_TURN_CCW    = "half_turn_ccw";
@@ -41,25 +46,28 @@ public class MainWindow implements ActionListener {
     private String[] mCommPorts;
     private JComboBox mComboPorts;
 
+    private GraphicsDevice[] mGraphicDevices;
+
     private String mSelectedPort;
     private SerialPort mSerialPort;
     private JButton mBtnCwHalfTurn;
     private JButton mBtnCcwHalfTurn;
     private JButton mBtnPortOpen;
     private JButton mBtnPortClose;
+    private JComboBox mComboVGA;
+    private JLabel mLblProject;
+    private JButton mBtnOpenProject;
 
     /**
      * Create the application.
      */
     public MainWindow() {
         loadCommPorts();
+        loadGraphicDevices();
         initViews();
     }
 
-    /**
-     * Initialize the contents of the frame.
-     */
-    private void initViews() {
+    private void initWindowFrame() {
         mFrmSla3dPrinter = new JFrame();
         mFrmSla3dPrinter.addWindowListener(new WindowAdapter() {
             @Override
@@ -75,34 +83,55 @@ public class MainWindow implements ActionListener {
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(false);
+    }
 
-        // Step motor pane
+    // Step motor pane
+    private void initStepMotorPanel() {
         JPanel stepMotorPane = new JPanel();
         stepMotorPane.setForeground(Color.BLUE);
         stepMotorPane.setToolTipText("");
         stepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Step Motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        stepMotorPane.setBounds(6, 104, 288, 58);
+        stepMotorPane.setBounds(6, 104, 288, 65);
         mFrmSla3dPrinter.getContentPane().add(stepMotorPane);
-        stepMotorPane.setLayout(new GridLayout(0, 2, 0, 0));
+        GridBagLayout gbl_stepMotorPane = new GridBagLayout();
+        gbl_stepMotorPane.columnWidths = new int[]{138, 138, 0};
+        gbl_stepMotorPane.rowHeights = new int[]{37, 0};
+        gbl_stepMotorPane.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
+        gbl_stepMotorPane.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+        stepMotorPane.setLayout(gbl_stepMotorPane);
+                
+                        mBtnCwHalfTurn = new JButton("CW half turn");
+                        GridBagConstraints gbc_mBtnCwHalfTurn = new GridBagConstraints();
+                        gbc_mBtnCwHalfTurn.fill = GridBagConstraints.BOTH;
+                        gbc_mBtnCwHalfTurn.insets = new Insets(0, 0, 0, 5);
+                        gbc_mBtnCwHalfTurn.gridx = 0;
+                        gbc_mBtnCwHalfTurn.gridy = 0;
+                        stepMotorPane.add(mBtnCwHalfTurn, gbc_mBtnCwHalfTurn);
+                        mBtnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
+                        mBtnCwHalfTurn.addActionListener(this);
+                        
+                                mBtnCwHalfTurn.setEnabled(false);
+        
+                mBtnCcwHalfTurn = new JButton("CCW half turn");
+                GridBagConstraints gbc_mBtnCcwHalfTurn = new GridBagConstraints();
+                gbc_mBtnCcwHalfTurn.fill = GridBagConstraints.BOTH;
+                gbc_mBtnCcwHalfTurn.gridx = 1;
+                gbc_mBtnCcwHalfTurn.gridy = 0;
+                stepMotorPane.add(mBtnCcwHalfTurn, gbc_mBtnCcwHalfTurn);
+                mBtnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
+                mBtnCcwHalfTurn.addActionListener(this);
+                mBtnCcwHalfTurn.setEnabled(false);
+    }
 
-        mBtnCwHalfTurn = new JButton("CW half turn");
-        stepMotorPane.add(mBtnCwHalfTurn);
-        mBtnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
-
-        mBtnCcwHalfTurn = new JButton("CCW half turn");
-        stepMotorPane.add(mBtnCcwHalfTurn);
-        mBtnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
-        mBtnCcwHalfTurn.addActionListener(this);
-        mBtnCwHalfTurn.addActionListener(this);
-
-        // COM port pane
+    // COM port pane
+    private void initComPortPanel() {
         JPanel comPortPane = new JPanel();
         comPortPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Com Port",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        comPortPane.setBounds(6, 6, 288, 94);
+        comPortPane.setBounds(306, 6, 288, 94);
         mFrmSla3dPrinter.getContentPane().add(comPortPane);
         GridBagLayout gbl_comPortPane = new GridBagLayout();
         comPortPane.setLayout(gbl_comPortPane);
@@ -138,21 +167,82 @@ public class MainWindow implements ActionListener {
         mBtnPortClose.addActionListener(this);
         comPortPane.add(mBtnPortClose, gbc_btnClose);
 
-        // init buttons state
-        mBtnCwHalfTurn.setEnabled(false);
-        mBtnCcwHalfTurn.setEnabled(false);
+        boolean hasPorts = mCommPorts.length != 0;
+        mBtnPortOpen.setEnabled(hasPorts);
+        mComboPorts.setEnabled(hasPorts);
         mBtnPortClose.setEnabled(false);
-        if (mCommPorts.length == 0) {
-            mBtnPortOpen.setEnabled(false);
-            mComboPorts.setEnabled(false);
-        } else {
-            mBtnPortOpen.setEnabled(true);
-            mComboPorts.setEnabled(true);
-        }
+    }
+
+    // VGA Output section
+    private void initVGAOutputPanel() {
+        JPanel vgaOutputPane = new JPanel();
+        vgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
+                        EtchedBorder.LOWERED, null, null), "VGA Ouput",
+                        TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
+        vgaOutputPane.setBounds(306, 104, 288, 65);
+        mFrmSla3dPrinter.getContentPane().add(vgaOutputPane);
+        GridBagLayout gbl_vgaOutputPane = new GridBagLayout();
+        gbl_vgaOutputPane.columnWidths = new int[]{276, 0};
+        gbl_vgaOutputPane.rowHeights = new int[]{27, 0};
+        gbl_vgaOutputPane.columnWeights = new double[]{0.0, Double.MIN_VALUE};
+        gbl_vgaOutputPane.rowWeights = new double[]{0.0, Double.MIN_VALUE};
+        vgaOutputPane.setLayout(gbl_vgaOutputPane);
+
+        mComboVGA = new JComboBox(mGraphicDevices);
+        mComboVGA.setSelectedIndex(0);
+        GridBagConstraints gbc_mComboVGA = new GridBagConstraints();
+        gbc_mComboVGA.anchor = GridBagConstraints.NORTH;
+        gbc_mComboVGA.fill = GridBagConstraints.HORIZONTAL;
+        gbc_mComboVGA.gridx = 0;
+        gbc_mComboVGA.gridy = 0;
+        vgaOutputPane.add(mComboVGA, gbc_mComboVGA);
+    }
+
+    // Init Input project panes
+    private void initInputProjectPanel() {
+        JPanel projectPane = new JPanel();
+        projectPane.setForeground(Color.BLUE);
+        projectPane.setBorder(new TitledBorder(new EtchedBorder(
+                        EtchedBorder.LOWERED, null, null), "3D Model projejct",
+                        TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
+        projectPane.setBounds(6, 6, 288, 94);
+        mFrmSla3dPrinter.getContentPane().add(projectPane);
+        projectPane.setLayout(null);
+
+        JLabel lblProject = new JLabel("Project:");
+        lblProject.setBounds(6, 22, 47, 28);
+        projectPane.add(lblProject);
+
+        mLblProject = new JLabel("");
+        mLblProject.setHorizontalAlignment(SwingConstants.LEFT);
+        mLblProject.setBounds(65, 22, 217, 28);
+        mLblProject.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        projectPane.add(mLblProject);
+
+        mBtnOpenProject = new JButton("Open Project");
+        mBtnOpenProject.setBounds(144, 55, 138, 33);
+        mBtnOpenProject.setActionCommand("open_project");
+        projectPane.add(mBtnOpenProject);
+    }
+
+    /**
+     * Initialize the contents of the frame.
+     */
+    private void initViews() {
+        initWindowFrame();
+        initStepMotorPanel();
+        initComPortPanel();
+        initVGAOutputPanel();
+        initInputProjectPanel();
     }
 
     private void loadCommPorts() {
         mCommPorts = SerialPortList.getPortNames();
+    }
+
+    private void loadGraphicDevices() {
+        mGraphicDevices =
+            GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
     }
 
     public void show() {
