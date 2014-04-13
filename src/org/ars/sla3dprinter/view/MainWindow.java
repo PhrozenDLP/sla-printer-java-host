@@ -12,6 +12,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -47,10 +48,10 @@ public class MainWindow implements ActionListener {
 
     private JFrame mFrmSla3dPrinter;
 
-    private String[] mCommPorts;
+    private Vector<String> mCommPorts = new Vector<String>();
     private JComboBox mComboPorts;
 
-    private GraphicsDevice[] mGraphicDevices;
+    private Vector<GraphicsDevice> mGraphicDevices = new Vector<GraphicsDevice>();
 
     private String mSelectedPort;
     private SerialPort mSerialPort;
@@ -105,28 +106,28 @@ public class MainWindow implements ActionListener {
         gbl_stepMotorPane.columnWeights = new double[]{0.0, 0.0, Double.MIN_VALUE};
         gbl_stepMotorPane.rowWeights = new double[]{0.0, Double.MIN_VALUE};
         stepMotorPane.setLayout(gbl_stepMotorPane);
-                
-                        mBtnCwHalfTurn = new JButton("CW half turn");
-                        GridBagConstraints gbc_mBtnCwHalfTurn = new GridBagConstraints();
-                        gbc_mBtnCwHalfTurn.fill = GridBagConstraints.BOTH;
-                        gbc_mBtnCwHalfTurn.insets = new Insets(0, 0, 0, 5);
-                        gbc_mBtnCwHalfTurn.gridx = 0;
-                        gbc_mBtnCwHalfTurn.gridy = 0;
-                        stepMotorPane.add(mBtnCwHalfTurn, gbc_mBtnCwHalfTurn);
-                        mBtnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
-                        mBtnCwHalfTurn.addActionListener(this);
-                        
-                                mBtnCwHalfTurn.setEnabled(false);
-        
-                mBtnCcwHalfTurn = new JButton("CCW half turn");
-                GridBagConstraints gbc_mBtnCcwHalfTurn = new GridBagConstraints();
-                gbc_mBtnCcwHalfTurn.fill = GridBagConstraints.BOTH;
-                gbc_mBtnCcwHalfTurn.gridx = 1;
-                gbc_mBtnCcwHalfTurn.gridy = 0;
-                stepMotorPane.add(mBtnCcwHalfTurn, gbc_mBtnCcwHalfTurn);
-                mBtnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
-                mBtnCcwHalfTurn.addActionListener(this);
-                mBtnCcwHalfTurn.setEnabled(false);
+
+        mBtnCwHalfTurn = new JButton("CW half turn");
+        GridBagConstraints gbc_mBtnCwHalfTurn = new GridBagConstraints();
+        gbc_mBtnCwHalfTurn.fill = GridBagConstraints.BOTH;
+        gbc_mBtnCwHalfTurn.insets = new Insets(0, 0, 0, 5);
+        gbc_mBtnCwHalfTurn.gridx = 0;
+        gbc_mBtnCwHalfTurn.gridy = 0;
+        stepMotorPane.add(mBtnCwHalfTurn, gbc_mBtnCwHalfTurn);
+        mBtnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
+        mBtnCwHalfTurn.addActionListener(this);
+
+        mBtnCwHalfTurn.setEnabled(false);
+
+        mBtnCcwHalfTurn = new JButton("CCW half turn");
+        GridBagConstraints gbc_mBtnCcwHalfTurn = new GridBagConstraints();
+        gbc_mBtnCcwHalfTurn.fill = GridBagConstraints.BOTH;
+        gbc_mBtnCcwHalfTurn.gridx = 1;
+        gbc_mBtnCcwHalfTurn.gridy = 0;
+        stepMotorPane.add(mBtnCcwHalfTurn, gbc_mBtnCcwHalfTurn);
+        mBtnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
+        mBtnCcwHalfTurn.addActionListener(this);
+        mBtnCcwHalfTurn.setEnabled(false);
     }
 
     // COM port pane
@@ -171,7 +172,7 @@ public class MainWindow implements ActionListener {
         mBtnPortClose.addActionListener(this);
         comPortPane.add(mBtnPortClose, gbc_btnClose);
 
-        boolean hasPorts = mCommPorts.length != 0;
+        boolean hasPorts = mCommPorts.size() != 0;
         mBtnPortOpen.setEnabled(hasPorts);
         mComboPorts.setEnabled(hasPorts);
         mBtnPortClose.setEnabled(false);
@@ -238,12 +239,22 @@ public class MainWindow implements ActionListener {
     }
 
     private void loadCommPorts() {
-        mCommPorts = SerialPortList.getPortNames();
+        String[] ports = SerialPortList.getPortNames();
+        if (ports != null) {
+            for (String port : ports) {
+                mCommPorts.add(port);
+            }
+        }
     }
 
     private void loadGraphicDevices() {
-        mGraphicDevices =
+        GraphicsDevice[] devices =
             GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+        if (devices != null) {
+            for (GraphicsDevice device : devices) {
+                mGraphicDevices.add(device);
+            }
+        }
     }
 
     public void show() {
