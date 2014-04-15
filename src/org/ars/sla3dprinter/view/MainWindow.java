@@ -1,11 +1,17 @@
 package org.ars.sla3dprinter.view;
 
+import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -35,13 +41,14 @@ public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
     private static final int START_POS_Y = 100;
     private static final int WIDTH = 500;
-    private static final int HEIGHT = 100;
+    private static final int HEIGHT = 130;
 
     private static final String ACTION_HALF_TURN_CW     = "half_turn_cw";
     private static final String ACTION_HALF_TURN_CCW    = "half_turn_ccw";
     private static final String ACTION_OPEN_PORT        = "open_port";
     private static final String ACTION_CLOSE_PORT       = "close_port";
     private static final String ACTION_OPEN_PROJECT     = "open_project";
+    private static final String ACTION_PRINT            = "print";
 
     private static final byte[] BYTE_HALF_TURN_CW   = "l".getBytes();
     private static final byte[] BYTE_HALF_TURN_CCW  = "r".getBytes();
@@ -62,6 +69,7 @@ public class MainWindow implements ActionListener {
     private JComboBox mComboVGA;
     private JLabel mLblProject;
     private JButton mBtnOpenProject;
+    private JButton mBtnPrint;
 
     /**
      * Create the application.
@@ -225,6 +233,7 @@ public class MainWindow implements ActionListener {
         mBtnOpenProject.setActionCommand(ACTION_OPEN_PROJECT);
         mBtnOpenProject.addActionListener(this);
         projectPane.add(mBtnOpenProject);
+
     }
 
     /**
@@ -236,6 +245,12 @@ public class MainWindow implements ActionListener {
         initComPortPanel();
         initVGAOutputPanel();
         initInputProjectPanel();
+
+        mBtnPrint = new JButton("Print");
+        mBtnPrint.setActionCommand(ACTION_PRINT);
+        mBtnPrint.addActionListener(this);
+        mBtnPrint.setBounds(477, 173, 117, 29);
+        mFrmSla3dPrinter.getContentPane().add(mBtnPrint);
     }
 
     private void loadCommPorts() {
@@ -309,6 +324,9 @@ public class MainWindow implements ActionListener {
             else if (ACTION_OPEN_PROJECT.equals(action)) {
                 openFileChooser();
             }
+            else if (ACTION_PRINT.equals(action)) {
+                promptFakeFrame();
+            }
             else {
                 Utils.log("Unknown action: " + action);
             }
@@ -337,6 +355,35 @@ public class MainWindow implements ActionListener {
             mLblProject.setToolTipText(path);
         } else {
             System.out.println("No Selection ");
+        }
+    }
+
+    private void promptFakeFrame() {
+        Object selected = mComboVGA.getSelectedItem();
+        if (selected instanceof GraphicsDevice) {
+            GraphicsDevice device = (GraphicsDevice) selected;
+            JFrame f = new JFrame(device.getDefaultConfiguration());
+            GraphicsConfiguration config = device.getDefaultConfiguration();
+            Canvas c = new Canvas(config) {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public void paint(Graphics g) {
+                    Font font = new Font("Serif", Font.PLAIN, 26);
+                    g.setFont(font);
+                    g.drawString("Hello 3D Printer", 50, 50);
+
+                    FontMetrics metrics = g.getFontMetrics();
+                    g.drawString("Hello 3D-Printer", 50, 50 + metrics.getAscent());
+                }
+            };
+            Rectangle gcBounds = config.getBounds();
+            int xoffs = gcBounds.x;
+            int yoffs = gcBounds.y;
+            f.setSize(800, 600);
+            f.getContentPane().add(c);
+            f.setLocation(xoffs, yoffs);
+            f.setVisible(true);
         }
     }
 
