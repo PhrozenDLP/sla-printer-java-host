@@ -372,7 +372,9 @@ public class MainWindow implements ActionListener {
         int retValue = chooser.showOpenDialog(null);
         if (retValue == JFileChooser.APPROVE_OPTION) {
             mSelectedProject = chooser.getSelectedFile();
-            if (mSelectedProject == null) return;
+            if (mSelectedProject == null) {
+                return;
+            }
 
             String path = null;
             try {
@@ -390,8 +392,7 @@ public class MainWindow implements ActionListener {
 
     private void promptFakeFrame() {
         if (mSelectedProject == null) {
-            JOptionPane.showMessageDialog(mFrmSla3dPrinter, "Choose a SVG by \'Open Project\'"
-                    ,"Error", JOptionPane.ERROR_MESSAGE);
+            showErrorDialog("Choose a SVG by \'Open Project\'");
             return;
         }
 
@@ -407,6 +408,10 @@ public class MainWindow implements ActionListener {
             f.setLocation(100, 10);
             f.setVisible(true);
         }
+    }
+
+    private void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     private SerialPort openPort(String portName) {
