@@ -57,7 +57,7 @@ public class MainWindow implements ActionListener {
 
     private Vector<String> mCommPorts = new Vector<String>();
     private Vector<GraphicsDevice> mGraphicDevices = new Vector<GraphicsDevice>();
-    private File mSelectedProjecdt;
+    private File mSelectedProject;
 
     private JFrame mFrmSla3dPrinter;
 
@@ -371,15 +371,17 @@ public class MainWindow implements ActionListener {
 
         int retValue = chooser.showOpenDialog(null);
         if (retValue == JFileChooser.APPROVE_OPTION) {
-            mSelectedProjecdt = chooser.getSelectedFile();
+            mSelectedProject = chooser.getSelectedFile();
+            if (mSelectedProject == null) return;
+
             String path = null;
             try {
-                path = mSelectedProjecdt.getCanonicalPath();
-            } catch (IOException e) {
-                path = mSelectedProjecdt.getName();
-                e.printStackTrace();
+                path = mSelectedProject.getCanonicalPath();
+            } catch (IOException ex) {
+                Utils.log(ex);
+                path = mSelectedProject.getName();
             }
-            mLblProject.setText(mSelectedProjecdt.getName());
+            mLblProject.setText(mSelectedProject.getName());
             mLblProject.setToolTipText(path);
         } else {
             System.out.println("No Selection ");
@@ -387,7 +389,7 @@ public class MainWindow implements ActionListener {
     }
 
     private void promptFakeFrame() {
-        if (mSelectedProjecdt == null) {
+        if (mSelectedProject == null) {
             JOptionPane.showMessageDialog(mFrmSla3dPrinter, "Choose a SVG by \'Open Project\'"
                     ,"Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -398,7 +400,7 @@ public class MainWindow implements ActionListener {
             GraphicsDevice device = (GraphicsDevice) selected;
             JFrame f = new JFrame(device.getDefaultConfiguration());
             SVGPanel svgPanel = new SVGPanel();
-            svgPanel.setSvgURI(mSelectedProjecdt.toURI());
+            svgPanel.setSvgURI(mSelectedProject.toURI());
             svgPanel.setScaleToFit(true);
             f.setSize(600, 600);
             f.getContentPane().add(svgPanel);
