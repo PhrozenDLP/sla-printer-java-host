@@ -36,6 +36,8 @@ import jssc.SerialPortException;
 import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Utils;
+import org.eclipse.wb.swing.FocusTraversalOnArray;
+import java.awt.Component;
 
 public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
@@ -60,10 +62,12 @@ public class MainWindow implements ActionListener {
 
     private JFrame mFrmSla3dPrinter;
 
+    private JPanel mStepMotorPane;
     private JButton mBtnCwHalfTurn;
     private JButton mBtnCcwHalfTurn;
 
     // UI components for Serial ports
+    private JPanel mComPortPane;
     private String mSelectedPort;
     private SerialPort mSerialPort;
     private JComboBox mComboPorts;
@@ -72,10 +76,12 @@ public class MainWindow implements ActionListener {
     private JButton mBtnPortRefresh;
 
     // UI components for VGA display
+    private JPanel mVgaOutputPane;
     private JComboBox mComboVGA;
     private JButton mBtnVGARefresh;
 
     // UI components for target project
+    private JPanel mProjectPane;
     private JLabel mLblProject;
     private JButton mBtnOpenProject;
     private JButton mBtnPrint;
@@ -128,19 +134,19 @@ public class MainWindow implements ActionListener {
 
     // Step motor pane
     private void initStepMotorPanel() {
-        JPanel stepMotorPane = new JPanel();
-        stepMotorPane.setForeground(Color.BLUE);
-        stepMotorPane.setToolTipText("");
-        stepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
+        mStepMotorPane = new JPanel();
+        mStepMotorPane.setForeground(Color.BLUE);
+        mStepMotorPane.setToolTipText("");
+        mStepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Step Motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        stepMotorPane.setBounds(6, 104, 288, 65);
-        mFrmSla3dPrinter.getContentPane().add(stepMotorPane);
-        stepMotorPane.setLayout(null);
+        mStepMotorPane.setBounds(6, 104, 288, 65);
+        mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
+        mStepMotorPane.setLayout(null);
 
         mBtnCwHalfTurn = new JButton("CW half turn");
         mBtnCwHalfTurn.setBounds(6, 18, 133, 37);
-        stepMotorPane.add(mBtnCwHalfTurn);
+        mStepMotorPane.add(mBtnCwHalfTurn);
         mBtnCwHalfTurn.setActionCommand(ACTION_HALF_TURN_CW);
         mBtnCwHalfTurn.addActionListener(this);
 
@@ -148,7 +154,7 @@ public class MainWindow implements ActionListener {
 
         mBtnCcwHalfTurn = new JButton("CCW half turn");
         mBtnCcwHalfTurn.setBounds(144, 18, 138, 37);
-        stepMotorPane.add(mBtnCcwHalfTurn);
+        mStepMotorPane.add(mBtnCcwHalfTurn);
         mBtnCcwHalfTurn.setActionCommand(ACTION_HALF_TURN_CCW);
         mBtnCcwHalfTurn.addActionListener(this);
         mBtnCcwHalfTurn.setEnabled(false);
@@ -156,17 +162,17 @@ public class MainWindow implements ActionListener {
 
     // COM port pane
     private void initComPortPanel() {
-        JPanel comPortPane = new JPanel();
-        comPortPane.setBorder(new TitledBorder(new EtchedBorder(
+        mComPortPane = new JPanel();
+        mComPortPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Com Port",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        comPortPane.setBounds(306, 6, 350, 100);
-        mFrmSla3dPrinter.getContentPane().add(comPortPane);
-        comPortPane.setLayout(null);
+        mComPortPane.setBounds(306, 6, 350, 100);
+        mFrmSla3dPrinter.getContentPane().add(mComPortPane);
+        mComPortPane.setLayout(null);
 
         mComboPorts = new JComboBox(mCommPorts);
         mComboPorts.setBounds(5, 20, 290, 30);
-        comPortPane.add(mComboPorts);
+        mComPortPane.add(mComboPorts);
         mComboPorts.insertItemAt("", 0);
         mComboPorts.setSelectedIndex(0);
         mComboPorts.addActionListener(this);
@@ -181,19 +187,19 @@ public class MainWindow implements ActionListener {
         }
         mBtnPortRefresh.setActionCommand(ACTION_REFRESH_PORT);
         mBtnPortRefresh.addActionListener(this);
-        comPortPane.add(mBtnPortRefresh);
+        mComPortPane.add(mBtnPortRefresh);
 
         mBtnPortOpen = new JButton("Open");
         mBtnPortOpen.setBounds(129, 53, 85, 30);
         mBtnPortOpen.setActionCommand(ACTION_OPEN_PORT);
         mBtnPortOpen.addActionListener(this);
-        comPortPane.add(mBtnPortOpen);
+        mComPortPane.add(mBtnPortOpen);
 
         mBtnPortClose = new JButton("Close");
         mBtnPortClose.setBounds(210, 53, 85, 30);
         mBtnPortClose.setActionCommand(ACTION_CLOSE_PORT);
         mBtnPortClose.addActionListener(this);
-        comPortPane.add(mBtnPortClose);
+        mComPortPane.add(mBtnPortClose);
 
         boolean hasPorts = mCommPorts.size() != 0;
         mBtnPortOpen.setEnabled(hasPorts);
@@ -203,18 +209,18 @@ public class MainWindow implements ActionListener {
 
     // VGA Output section
     private void initVGAOutputPanel() {
-        JPanel vgaOutputPane = new JPanel();
-        vgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
+        mVgaOutputPane = new JPanel();
+        mVgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "VGA Ouput",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        vgaOutputPane.setBounds(306, 104, 350, 60);
-        mFrmSla3dPrinter.getContentPane().add(vgaOutputPane);
-        vgaOutputPane.setLayout(null);
+        mVgaOutputPane.setBounds(306, 104, 350, 60);
+        mFrmSla3dPrinter.getContentPane().add(mVgaOutputPane);
+        mVgaOutputPane.setLayout(null);
 
         mComboVGA = new JComboBox(mGraphicDevices);
         mComboVGA.setBounds(5, 20, 290, 30);
         mComboVGA.setSelectedIndex(0);
-        vgaOutputPane.add(mComboVGA);
+        mVgaOutputPane.add(mComboVGA);
 
         mBtnVGARefresh = new JButton("R");
         mBtnVGARefresh.setBounds(300, 20, 30, 30);
@@ -226,31 +232,31 @@ public class MainWindow implements ActionListener {
         }
         mBtnVGARefresh.setActionCommand(ACTION_REFRESH_VGA);
         mBtnVGARefresh.addActionListener(this);
-        vgaOutputPane.add(mBtnVGARefresh);
+        mVgaOutputPane.add(mBtnVGARefresh);
     }
 
     // Init Input project panes
     private void initInputProjectPanel() {
-        JPanel projectPane = new JPanel();
-        projectPane.setForeground(Color.BLUE);
-        projectPane.setBorder(new TitledBorder(new EtchedBorder(
+        mProjectPane = new JPanel();
+        mProjectPane.setForeground(Color.BLUE);
+        mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        projectPane.setBounds(6, 6, 288, 94);
-        mFrmSla3dPrinter.getContentPane().add(projectPane);
-        projectPane.setLayout(null);
+        mProjectPane.setBounds(6, 6, 288, 94);
+        mFrmSla3dPrinter.getContentPane().add(mProjectPane);
+        mProjectPane.setLayout(null);
 
         mLblProject = new JLabel("");
         mLblProject.setHorizontalAlignment(SwingConstants.LEFT);
         mLblProject.setBounds(6, 22, 276, 28);
         mLblProject.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        projectPane.add(mLblProject);
+        mProjectPane.add(mLblProject);
 
         mBtnOpenProject = new JButton("Open Project");
         mBtnOpenProject.setBounds(144, 55, 138, 33);
         mBtnOpenProject.setActionCommand(ACTION_OPEN_PROJECT);
         mBtnOpenProject.addActionListener(this);
-        projectPane.add(mBtnOpenProject);
+        mProjectPane.add(mBtnOpenProject);
 
     }
 
@@ -269,6 +275,7 @@ public class MainWindow implements ActionListener {
         mBtnPrint.addActionListener(this);
         mBtnPrint.setBounds(175, 173, 117, 29);
         mFrmSla3dPrinter.getContentPane().add(mBtnPrint);
+        mFrmSla3dPrinter.setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{mBtnPrint, mFrmSla3dPrinter.getContentPane(), mStepMotorPane, mBtnCwHalfTurn, mBtnCcwHalfTurn, mComPortPane, mComboPorts, mBtnPortRefresh, mBtnPortOpen, mBtnPortClose, mVgaOutputPane, mComboVGA, mBtnVGARefresh, mProjectPane, mLblProject, mBtnOpenProject}));
     }
 
     private void loadCommPorts() {
