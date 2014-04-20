@@ -2,12 +2,27 @@ package org.ars.sla3dprinter;
 
 import java.awt.EventQueue;
 
+import javax.swing.UIManager;
+
 import org.ars.sla3dprinter.util.Utils;
 import org.ars.sla3dprinter.view.MainWindow;
 
 public class SLA3DPrinter {
 
     public static void main(String[] args) {
+        // take the menu bar off the jframe
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+
+        // set the name of the application menu item
+        System.setProperty("com.apple.mrj.application.apple.menu.about.name", "DLA Printer");
+
+        // set the look and feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ex) {
+            Utils.log(ex);
+        }
+
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
