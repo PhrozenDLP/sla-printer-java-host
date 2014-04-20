@@ -1,15 +1,10 @@
 package org.ars.sla3dprinter.view;
 
-import java.awt.Canvas;
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.GraphicsConfiguration;
+import java.awt.Component;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -26,10 +21,12 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -37,7 +34,8 @@ import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Utils;
 import org.eclipse.wb.swing.FocusTraversalOnArray;
-import java.awt.Component;
+
+import com.kitfox.svg.app.beans.SVGPanel;
 
 public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
@@ -59,6 +57,7 @@ public class MainWindow implements ActionListener {
 
     private Vector<String> mCommPorts = new Vector<String>();
     private Vector<GraphicsDevice> mGraphicDevices = new Vector<GraphicsDevice>();
+    private File mSelectedProjecdt;
 
     private JFrame mFrmSla3dPrinter;
 
@@ -361,22 +360,26 @@ public class MainWindow implements ActionListener {
     }
 
     private void openFileChooser() {
+        FileNameExtensionFilter svgFilter =
+                new FileNameExtensionFilter("Scalable Vector Graphic (.svg)", "svg");
+
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Open project");
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-        // disable the "All files" option.
+        chooser.addChoosableFileFilter(svgFilter);
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            File selectedDir = chooser.getSelectedFile();
+
+        int retValue = chooser.showOpenDialog(null);
+        if (retValue == JFileChooser.APPROVE_OPTION) {
+            mSelectedProjecdt = chooser.getSelectedFile();
             String path = null;
             try {
-                path = selectedDir.getCanonicalPath();
+                path = mSelectedProjecdt.getCanonicalPath();
             } catch (IOException e) {
-                path = selectedDir.getName();
+                path = mSelectedProjecdt.getName();
                 e.printStackTrace();
             }
-            mLblProject.setText(selectedDir.getName());
+            mLblProject.setText(mSelectedProjecdt.getName());
             mLblProject.setToolTipText(path);
         } else {
             System.out.println("No Selection ");
@@ -384,31 +387,22 @@ public class MainWindow implements ActionListener {
     }
 
     private void promptFakeFrame() {
+        if (mSelectedProjecdt == null) {
+            JOptionPane.showMessageDialog(mFrmSla3dPrinter, "Choose a SVG by \'Open Project\'"
+                    ,"Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         Object selected = mComboVGA.getSelectedItem();
         if (selected instanceof GraphicsDevice) {
             GraphicsDevice device = (GraphicsDevice) selected;
             JFrame f = new JFrame(device.getDefaultConfiguration());
-            GraphicsConfiguration config = device.getDefaultConfiguration();
-            Canvas c = new Canvas(config) {
-                private static final long serialVersionUID = 1L;
-
-                @Override
-                public void paint(Graphics g) {
-                    Font font = new Font("Serif", Font.PLAIN, 26);
-                    g.setFont(font);
-                    g.drawString("Hello 3D Printer", 50, 50);
-
-                    FontMetrics metrics = g.getFontMetrics();
-                    g.drawString("Hello 3D-Printer", 50,
-                            50 + metrics.getAscent());
-                }
-            };
-            Rectangle gcBounds = config.getBounds();
-            int xoffs = gcBounds.x;
-            int yoffs = gcBounds.y;
-            f.setSize(800, 600);
-            f.getContentPane().add(c);
-            f.setLocation(xoffs, yoffs);
+            SVGPanel svgPanel = new SVGPanel();
+            svgPanel.setSvgURI(mSelectedProjecdt.toURI());
+            svgPanel.setScaleToFit(true);
+            f.setSize(600, 600);
+            f.getContentPane().add(svgPanel);
+            f.setLocation(100, 10);
             f.setVisible(true);
         }
     }
