@@ -1,6 +1,9 @@
 *.class
 
 # Package Files #
-bin/*.jar
+bin/*
 *.war
 *.ear
+
+# VIM files
+*.swp
