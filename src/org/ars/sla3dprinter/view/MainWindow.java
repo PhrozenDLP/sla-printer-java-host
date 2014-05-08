@@ -34,9 +34,12 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 
+import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Utils;
 
 import com.kitfox.svg.app.beans.SVGPanel;
+
+import java.awt.Font;
 
 public class MainWindow implements ActionListener {
     private static final int START_POS_X = 100;
@@ -52,6 +55,7 @@ public class MainWindow implements ActionListener {
     private static final String ACTION_PRINT = "print";
 
     private Vector<String> mCommPorts = new Vector<String>();
+    private Vector<String> mCommBauds = new Vector<String>();
     private Vector<GraphicsDevice> mGraphicDevices = new Vector<GraphicsDevice>();
     private File mSelectedProject;
 
@@ -81,6 +85,8 @@ public class MainWindow implements ActionListener {
 
     // Resource part for images
     private Image mImgRefresh;
+    private JComboBox mComboBauds;
+    private JLabel lblHz;
 
     /**
      * Create the application.
@@ -90,7 +96,7 @@ public class MainWindow implements ActionListener {
         loadCommPorts();
         loadGraphicDevices();
         initViews();
-        disposeResources();
+//        disposeResources();
     }
 
     private void prepareResources() {
@@ -101,10 +107,18 @@ public class MainWindow implements ActionListener {
         } catch (IOException ex) {
             Utils.log(ex);
         }
+
+        // Comm Baud bands
+        mCommBauds.add(Consts.COMM_BAND_9600);
+        mCommBauds.add(Consts.COMM_BAND_14400);
+        mCommBauds.add(Consts.COMM_BAND_19200);
+        mCommBauds.add(Consts.COMM_BAND_28800);
+        mCommBauds.add(Consts.COMM_BAND_38400);
     }
 
     private void disposeResources() {
         mImgRefresh = null;
+        mCommBauds.clear();
     }
 
     /**
@@ -169,7 +183,7 @@ public class MainWindow implements ActionListener {
         mComPortPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Printer conntection",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mComPortPane.setBounds(6, 6, 350, 100);
+        mComPortPane.setBounds(6, 6, 350, 130);
         mFrmSla3dPrinter.getContentPane().add(mComPortPane);
         mComPortPane.setLayout(null);
 
@@ -193,13 +207,13 @@ public class MainWindow implements ActionListener {
         mComPortPane.add(mBtnPortRefresh);
 
         mBtnPortOpen = new JButton("Open");
-        mBtnPortOpen.setBounds(129, 53, 85, 30);
+        mBtnPortOpen.setBounds(150, 90, 85, 30);
         mBtnPortOpen.setActionCommand(ACTION_OPEN_PORT);
         mBtnPortOpen.addActionListener(this);
         mComPortPane.add(mBtnPortOpen);
 
         mBtnPortClose = new JButton("Close");
-        mBtnPortClose.setBounds(210, 53, 85, 30);
+        mBtnPortClose.setBounds(240, 90, 85, 30);
         mBtnPortClose.setActionCommand(ACTION_CLOSE_PORT);
         mBtnPortClose.addActionListener(this);
         mComPortPane.add(mBtnPortClose);
@@ -208,6 +222,22 @@ public class MainWindow implements ActionListener {
         mBtnPortOpen.setEnabled(hasPorts);
         mComboPorts.setEnabled(hasPorts);
         mBtnPortClose.setEnabled(false);
+
+        mComboBauds = new JComboBox(mCommBauds);
+        mComboBauds.setSelectedIndex(0);
+        mComboBauds.setEnabled(true);
+        mComboBauds.setBounds(55, 55, 90, 30);
+        mComPortPane.add(mComboBauds);
+
+        JLabel lblBaud = new JLabel("Baud:");
+        lblBaud.setFont(new Font("Monaco", Font.PLAIN, 14));
+        lblBaud.setBounds(10, 55, 45, 30);
+        mComPortPane.add(lblBaud);
+        
+        lblHz = new JLabel("Hz");
+        lblHz.setFont(new Font("Monaco", Font.PLAIN, 14));
+        lblHz.setBounds(145, 55, 20, 30);
+        mComPortPane.add(lblHz);
     }
 
     // VGA Output section
@@ -216,7 +246,7 @@ public class MainWindow implements ActionListener {
         mVgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Projector connection",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mVgaOutputPane.setBounds(6, 118, 350, 60);
+        mVgaOutputPane.setBounds(6, 150, 350, 60);
         mFrmSla3dPrinter.getContentPane().add(mVgaOutputPane);
         mVgaOutputPane.setLayout(null);
 
@@ -277,7 +307,7 @@ public class MainWindow implements ActionListener {
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
                         EtchedBorder.LOWERED, null, null), "Misc",
                         TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mMiscPane.setBounds(6, 190, 350, 240);
+        mMiscPane.setBounds(6, 220, 350, 200);
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
     }
 
@@ -304,6 +334,7 @@ public class MainWindow implements ActionListener {
 
     public void show() {
         mFrmSla3dPrinter.setVisible(true);
+        mFrmSla3dPrinter.requestFocus();
     }
 
     @Override
