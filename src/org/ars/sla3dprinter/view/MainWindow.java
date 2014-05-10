@@ -114,6 +114,8 @@ public class MainWindow implements ActionListener {
         mCommBauds.add(Consts.COMM_BAND_19200);
         mCommBauds.add(Consts.COMM_BAND_28800);
         mCommBauds.add(Consts.COMM_BAND_38400);
+        mCommBauds.add(Consts.COMM_BAND_57600);
+        mCommBauds.add(Consts.COMM_BAND_115200);
     }
 
     private void disposeResources() {

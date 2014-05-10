@@ -8,4 +8,6 @@ public class Consts {
     public static final String COMM_BAND_19200  = "19200";
     public static final String COMM_BAND_28800  = "28800";
     public static final String COMM_BAND_38400  = "38400";
+    public static final String COMM_BAND_57600  = "57600";
+    public static final String COMM_BAND_115200 = "115200";
 }
