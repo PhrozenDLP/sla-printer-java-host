@@ -1,6 +1,7 @@
 package org.ars.sla3dprinter.view;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -13,6 +14,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
@@ -21,6 +23,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -29,6 +32,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.NumberFormatter;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -39,20 +43,18 @@ import org.ars.sla3dprinter.util.Utils;
 
 import com.kitfox.svg.app.beans.SVGPanel;
 
-import java.awt.Font;
-
 public class MainWindow implements ActionListener {
-    private static final int START_POS_X = 100;
-    private static final int START_POS_Y = 100;
-    private static final int WIDTH = 630;
-    private static final int HEIGHT = 360;
+    private static final int START_POS_X    = 100;
+    private static final int START_POS_Y    = 100;
+    private static final int WIDTH          = 630;
+    private static final int HEIGHT         = 360;
 
-    private static final String ACTION_OPEN_PORT = "open_port";
-    private static final String ACTION_CLOSE_PORT = "close_port";
-    private static final String ACTION_REFRESH_PORT = "refresh_port";
-    private static final String ACTION_REFRESH_VGA = "refresh_vga";
-    private static final String ACTION_OPEN_PROJECT = "open_project";
-    private static final String ACTION_PRINT = "print";
+    private static final String ACTION_OPEN_PORT        = "open_port";
+    private static final String ACTION_CLOSE_PORT       = "close_port";
+    private static final String ACTION_REFRESH_PORT     = "refresh_port";
+    private static final String ACTION_REFRESH_VGA      = "refresh_vga";
+    private static final String ACTION_OPEN_PROJECT     = "open_project";
+    private static final String ACTION_PRINT            = "print";
 
     private Vector<String> mCommPorts = new Vector<String>();
     private Vector<String> mCommBauds = new Vector<String>();
@@ -71,22 +73,33 @@ public class MainWindow implements ActionListener {
     private JButton mBtnPortOpen;
     private JButton mBtnPortClose;
     private JButton mBtnPortRefresh;
+    private JComboBox mComboBauds;
 
     // UI components for VGA display
     private JPanel mVgaOutputPane;
     private JComboBox mComboVGA;
     private JButton mBtnVGARefresh;
 
+    // UI components for printing config
+    private JFormattedTextField mInputBaseExpo;
+    private JFormattedTextField mInputMm2Steps;
+    private JFormattedTextField mInputLayerHeight;
+    private JFormattedTextField mInputLayerExpo;
+    private JFormattedTextField mInputTankHDeg;
+    private JFormattedTextField mInputTankRestAng;
+
     // UI components for target project
     private JPanel mProjectPane;
     private JLabel mLblProject;
     private JButton mBtnOpenProject;
     private JButton mBtnPrint;
+    private JLabel mLblEstimated;
 
     // Resource part for images
+    private Font mUIFont = new Font("Monaco", Font.PLAIN, 14);
     private Image mImgRefresh;
-    private JComboBox mComboBauds;
-    private JLabel lblHz;
+    private NumberFormatter mIntegerInputFormat = new NumberFormatter(
+                    new DecimalFormat());
 
     /**
      * Create the application.
@@ -96,7 +109,7 @@ public class MainWindow implements ActionListener {
         loadCommPorts();
         loadGraphicDevices();
         initViews();
-//        disposeResources();
+        disposeResources();
     }
 
     private void prepareResources() {
@@ -107,6 +120,9 @@ public class MainWindow implements ActionListener {
         } catch (IOException ex) {
             Utils.log(ex);
         }
+
+        mIntegerInputFormat.setAllowsInvalid(false);
+        mIntegerInputFormat.setValueClass(Integer.class);
 
         // Comm Baud bands
         mCommBauds.add(Consts.COMM_BAND_9600);
@@ -120,7 +136,6 @@ public class MainWindow implements ActionListener {
 
     private void disposeResources() {
         mImgRefresh = null;
-        mCommBauds.clear();
     }
 
     /**
@@ -165,6 +180,39 @@ public class MainWindow implements ActionListener {
         mStepMotorPane.setBounds(368, 6, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
         mStepMotorPane.setLayout(null);
+
+        JLabel lblLayerStep = new JLabel("Steps / mm:");
+        lblLayerStep.setFont(mUIFont);
+        lblLayerStep.setBounds(10, 20, 100, 30);
+        mStepMotorPane.add(lblLayerStep);
+
+        JLabel lblLayerHeight = new JLabel("Layer Height(mm):");
+        lblLayerHeight.setFont(mUIFont);
+        lblLayerHeight.setBounds(10, 60, 150, 30);
+        mStepMotorPane.add(lblLayerHeight);
+
+        JLabel lblLayerExposure = new JLabel("Exposure(sec):");
+        lblLayerExposure.setFont(mUIFont);
+        lblLayerExposure.setBounds(10, 100, 120, 30);
+        mStepMotorPane.add(lblLayerExposure);
+
+        mInputMm2Steps = new JFormattedTextField(mIntegerInputFormat);
+        mInputMm2Steps.setFont(mUIFont);
+        mInputMm2Steps.setColumns(10);
+        mInputMm2Steps.setBounds(105, 20, 80, 30);
+        mStepMotorPane.add(mInputMm2Steps);
+
+        mInputLayerHeight = new JFormattedTextField(mIntegerInputFormat);
+        mInputLayerHeight.setFont(mUIFont);
+        mInputLayerHeight.setColumns(10);
+        mInputLayerHeight.setBounds(155, 60, 80, 30);
+        mStepMotorPane.add(mInputLayerHeight);
+
+        mInputLayerExpo = new JFormattedTextField(mIntegerInputFormat);
+        mInputLayerExpo.setFont(mUIFont);
+        mInputLayerExpo.setColumns(10);
+        mInputLayerExpo.setBounds(130, 100, 80, 30);
+        mStepMotorPane.add(mInputLayerExpo);
     }
 
     private void initServoMotorPanel() {
@@ -173,10 +221,32 @@ public class MainWindow implements ActionListener {
         mServoMotorPane.setToolTipText("");
         mServoMotorPane.setForeground(Color.BLUE);
         mServoMotorPane.setBorder(new TitledBorder(new EtchedBorder(
-                        EtchedBorder.LOWERED, null, null), "Servo Motor control",
-                        TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
+                EtchedBorder.LOWERED, null, null), "Servo Motor control",
+                TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
         mServoMotorPane.setBounds(368, 168, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mServoMotorPane);
+
+        JLabel lblHorizontalDeg = new JLabel("Horizontal deg:");
+        lblHorizontalDeg.setFont(mUIFont);
+        lblHorizontalDeg.setBounds(10, 20, 120, 30);
+        mServoMotorPane.add(lblHorizontalDeg);
+
+        JLabel lblTankResetAngle = new JLabel("Tank reset deg:");
+        lblTankResetAngle.setFont(mUIFont);
+        lblTankResetAngle.setBounds(10, 60, 120, 30);
+        mServoMotorPane.add(lblTankResetAngle);
+
+        mInputTankHDeg = new JFormattedTextField(mIntegerInputFormat);
+        mInputTankHDeg.setFont(mUIFont);
+        mInputTankHDeg.setColumns(10);
+        mInputTankHDeg.setBounds(140, 20, 80, 30);
+        mServoMotorPane.add(mInputTankHDeg);
+
+        mInputTankRestAng = new JFormattedTextField(mIntegerInputFormat);
+        mInputTankRestAng.setFont(mUIFont);
+        mInputTankRestAng.setColumns(10);
+        mInputTankRestAng.setBounds(140, 60, 80, 30);
+        mServoMotorPane.add(mInputTankRestAng);
     }
 
     // COM port pane
@@ -228,18 +298,13 @@ public class MainWindow implements ActionListener {
         mComboBauds = new JComboBox(mCommBauds);
         mComboBauds.setSelectedIndex(0);
         mComboBauds.setEnabled(true);
-        mComboBauds.setBounds(55, 55, 90, 30);
+        mComboBauds.setBounds(90, 55, 100, 30);
         mComPortPane.add(mComboBauds);
 
-        JLabel lblBaud = new JLabel("Baud:");
-        lblBaud.setFont(new Font("Monaco", Font.PLAIN, 14));
-        lblBaud.setBounds(10, 55, 45, 30);
+        JLabel lblBaud = new JLabel("Baud(Hz):");
+        lblBaud.setFont(mUIFont);
+        lblBaud.setBounds(10, 55, 80, 30);
         mComPortPane.add(lblBaud);
-        
-        lblHz = new JLabel("Hz");
-        lblHz.setFont(new Font("Monaco", Font.PLAIN, 14));
-        lblHz.setBounds(145, 55, 20, 30);
-        mComPortPane.add(lblHz);
     }
 
     // VGA Output section
@@ -292,12 +357,12 @@ public class MainWindow implements ActionListener {
         mBtnOpenProject.setActionCommand(ACTION_OPEN_PROJECT);
         mBtnOpenProject.addActionListener(this);
         mProjectPane.add(mBtnOpenProject);
-        
-            mBtnPrint = new JButton("Print");
-            mBtnPrint.setBounds(220, 60, 120, 30);
-            mProjectPane.add(mBtnPrint);
-            mBtnPrint.setActionCommand(ACTION_PRINT);
-            mBtnPrint.addActionListener(this);
+
+        mBtnPrint = new JButton("Print");
+        mBtnPrint.setBounds(220, 60, 120, 30);
+        mProjectPane.add(mBtnPrint);
+        mBtnPrint.setActionCommand(ACTION_PRINT);
+        mBtnPrint.addActionListener(this);
 
     }
 
@@ -307,10 +372,32 @@ public class MainWindow implements ActionListener {
         mMiscPane.setToolTipText("");
         mMiscPane.setForeground(Color.BLUE);
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
-                        EtchedBorder.LOWERED, null, null), "Misc",
-                        TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
+                EtchedBorder.LOWERED, null, null), "Misc",
+                TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
         mMiscPane.setBounds(6, 220, 350, 200);
+
+        JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
+        lblBaseExposure.setFont(mUIFont);
+        lblBaseExposure.setBounds(10, 20, 160, 30);
+        mMiscPane.add(lblBaseExposure);
+
+        JLabel lblEstimate = new JLabel("Estimate time:");
+        lblEstimate.setFont(mUIFont);
+        lblEstimate.setBounds(10, 60, 120, 30);
+        mMiscPane.add(lblEstimate);
+
+        mLblEstimated = new JLabel("0s");
+        mLblEstimated.setFont(mUIFont);
+        mLblEstimated.setBounds(130, 60, 150, 30);
+        mMiscPane.add(mLblEstimated);
+
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
+
+        mInputBaseExpo = new JFormattedTextField(mIntegerInputFormat);
+        mInputBaseExpo.setFont(mUIFont);
+        mInputBaseExpo.setBounds(175, 20, 80, 30);
+        mMiscPane.add(mInputBaseExpo);
+        mInputBaseExpo.setColumns(10);
     }
 
     private void loadCommPorts() {
@@ -384,7 +471,8 @@ public class MainWindow implements ActionListener {
 
     private void openFileChooser() {
         FileNameExtensionFilter svgFilter =
-                new FileNameExtensionFilter("Scalable Vector Graphic (.svg)", "svg");
+                new FileNameExtensionFilter("Scalable Vector Graphic (.svg)",
+                        "svg");
 
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Open project");
@@ -431,7 +519,9 @@ public class MainWindow implements ActionListener {
             f.getContentPane().add(svgPanel);
             f.addKeyListener(new KeyListener() {
                 @Override
-                public void keyTyped(KeyEvent event) {}
+                public void keyTyped(KeyEvent event) {
+                }
+
                 @Override
                 public void keyReleased(KeyEvent event) {
                     switch (event.getKeyCode()) {
@@ -439,8 +529,10 @@ public class MainWindow implements ActionListener {
                             f.dispose();
                     }
                 }
+
                 @Override
-                public void keyPressed(KeyEvent event) {}
+                public void keyPressed(KeyEvent event) {
+                }
             });
             f.dispose();
             f.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -453,7 +545,8 @@ public class MainWindow implements ActionListener {
     }
 
     private void showErrorDialog(String message) {
-        JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error",
+                JOptionPane.ERROR_MESSAGE);
     }
 
     private SerialPort openPort(String portName) {
