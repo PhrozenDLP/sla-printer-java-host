@@ -39,6 +39,7 @@ import jssc.SerialPortException;
 import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Consts;
+import org.ars.sla3dprinter.util.Consts.UIAction;
 import org.ars.sla3dprinter.util.Utils;
 
 import com.kitfox.svg.app.beans.SVGPanel;
@@ -48,13 +49,6 @@ public class MainWindow implements ActionListener {
     private static final int START_POS_Y    = 100;
     private static final int WIDTH          = 630;
     private static final int HEIGHT         = 360;
-
-    private static final String ACTION_OPEN_PORT        = "open_port";
-    private static final String ACTION_CLOSE_PORT       = "close_port";
-    private static final String ACTION_REFRESH_PORT     = "refresh_port";
-    private static final String ACTION_REFRESH_VGA      = "refresh_vga";
-    private static final String ACTION_OPEN_PROJECT     = "open_project";
-    private static final String ACTION_PRINT            = "print";
 
     private Vector<String> mCommPorts = new Vector<String>();
     private Vector<String> mCommBauds = new Vector<String>();
@@ -264,6 +258,7 @@ public class MainWindow implements ActionListener {
         mComPortPane.add(mComboPorts);
         mComboPorts.insertItemAt("", 0);
         mComboPorts.setSelectedIndex(0);
+        mComboPorts.setActionCommand(UIAction.COM_PORT_CHANGE.name());
         mComboPorts.addActionListener(this);
 
         mBtnPortRefresh = new JButton("R");
@@ -274,19 +269,19 @@ public class MainWindow implements ActionListener {
             mBtnPortRefresh.setIcon(icon);
             mBtnPortRefresh.setText("");
         }
-        mBtnPortRefresh.setActionCommand(ACTION_REFRESH_PORT);
+        mBtnPortRefresh.setActionCommand(Consts.ACTION_REFRESH_PORT);
         mBtnPortRefresh.addActionListener(this);
         mComPortPane.add(mBtnPortRefresh);
 
         mBtnPortOpen = new JButton("Open");
         mBtnPortOpen.setBounds(150, 90, 85, 30);
-        mBtnPortOpen.setActionCommand(ACTION_OPEN_PORT);
+        mBtnPortOpen.setActionCommand(Consts.ACTION_OPEN_PORT);
         mBtnPortOpen.addActionListener(this);
         mComPortPane.add(mBtnPortOpen);
 
         mBtnPortClose = new JButton("Close");
         mBtnPortClose.setBounds(240, 90, 85, 30);
-        mBtnPortClose.setActionCommand(ACTION_CLOSE_PORT);
+        mBtnPortClose.setActionCommand(Consts.ACTION_CLOSE_PORT);
         mBtnPortClose.addActionListener(this);
         mComPortPane.add(mBtnPortClose);
 
@@ -330,7 +325,7 @@ public class MainWindow implements ActionListener {
             mBtnVGARefresh.setIcon(icon);
             mBtnVGARefresh.setText("");
         }
-        mBtnVGARefresh.setActionCommand(ACTION_REFRESH_VGA);
+        mBtnVGARefresh.setActionCommand(Consts.ACTION_REFRESH_VGA);
         mBtnVGARefresh.addActionListener(this);
         mVgaOutputPane.add(mBtnVGARefresh);
     }
@@ -354,14 +349,14 @@ public class MainWindow implements ActionListener {
 
         mBtnOpenProject = new JButton("Open Project");
         mBtnOpenProject.setBounds(100, 60, 120, 30);
-        mBtnOpenProject.setActionCommand(ACTION_OPEN_PROJECT);
+        mBtnOpenProject.setActionCommand(Consts.ACTION_OPEN_PROJECT);
         mBtnOpenProject.addActionListener(this);
         mProjectPane.add(mBtnOpenProject);
 
         mBtnPrint = new JButton("Print");
         mBtnPrint.setBounds(220, 60, 120, 30);
         mProjectPane.add(mBtnPrint);
-        mBtnPrint.setActionCommand(ACTION_PRINT);
+        mBtnPrint.setActionCommand(Consts.ACTION_PRINT);
         mBtnPrint.addActionListener(this);
 
     }
@@ -428,18 +423,22 @@ public class MainWindow implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent ae) {
-        Object source = ae.getSource();
-        if (source instanceof JComboBox) {
-            JComboBox comboBox = (JComboBox) source;
-            String comPorts = comboBox.getSelectedItem().toString();
-            mSelectedPort = Utils.isTextEmpty(comPorts) ? null : comPorts;
-        } else if (source instanceof JButton) {
-            final String action = ae.getActionCommand();
-            if (ACTION_REFRESH_PORT.equals(action)) {
-                loadCommPorts();
-            } else if (ACTION_REFRESH_VGA.equals(action)) {
-                loadGraphicDevices();
-            } else if (ACTION_OPEN_PORT.equals(action)) {
+        final String action = ae.getActionCommand();
+        final Object source = ae.getSource();
+        if (Utils.isTextEmpty(action)) return;
+        if (source == null) return;
+
+        switch (UIAction.valueOf(action)) {
+            case COM_PORT_CHANGE:
+                JComboBox comboBox = (JComboBox) source;
+                String comPorts = comboBox.getSelectedItem().toString();
+                mSelectedPort = Utils.isTextEmpty(comPorts) ? null : comPorts;
+                break;
+            case COM_BAUZ_CHANGE:
+                break;
+            case VGA_PORT_CHANGE:
+                break;
+            case OPEN_PORT:
                 if (Utils.isTextEmpty(mSelectedPort)) {
                     Utils.log("No selected comm port");
                     return;
@@ -450,22 +449,30 @@ public class MainWindow implements ActionListener {
                     mComboPorts.setEnabled(false);
                     mBtnPortClose.setEnabled(true);
                 }
-            } else if (ACTION_CLOSE_PORT.equals(action)) {
+                break;
+            case CLOSE_PORT:
                 if (closePort(mSerialPort)) {
                     mBtnPortOpen.setEnabled(true);
                     mComboPorts.setEnabled(true);
                     mBtnPortClose.setEnabled(false);
                     mSerialPort = null;
                 }
-            } else if (ACTION_OPEN_PROJECT.equals(action)) {
+                break;
+            case REFRESH_PORT:
+                loadCommPorts();
+                break;
+            case REFRESH_VGA:
+                loadGraphicDevices();
+                break;
+            case OPEN_PROJECT:
                 openFileChooser();
-            } else if (ACTION_PRINT.equals(action)) {
+                break;
+            case START_PRINT:
                 promptFakeFrame();
-            } else {
+                break;
+            default:
                 Utils.log("Unknown action: " + action);
-            }
-        } else {
-            Utils.log("Unknown source: " + source);
+                break;
         }
     }
 
