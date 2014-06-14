@@ -15,13 +15,6 @@ public class Consts {
         START_PRINT
     }
 
-    public static final String ACTION_OPEN_PORT        = "open_port";
-    public static final String ACTION_CLOSE_PORT       = "close_port";
-    public static final String ACTION_REFRESH_PORT     = "refresh_port";
-    public static final String ACTION_REFRESH_VGA      = "refresh_vga";
-    public static final String ACTION_OPEN_PROJECT     = "open_project";
-    public static final String ACTION_PRINT            = "print";
-
     // Comm Bauds
     public static final String COMM_BAND_9600   = "9600";
     public static final String COMM_BAND_14400  = "14400";

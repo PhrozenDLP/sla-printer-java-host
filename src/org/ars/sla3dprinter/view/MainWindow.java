@@ -269,19 +269,19 @@ public class MainWindow implements ActionListener {
             mBtnPortRefresh.setIcon(icon);
             mBtnPortRefresh.setText("");
         }
-        mBtnPortRefresh.setActionCommand(Consts.ACTION_REFRESH_PORT);
+        mBtnPortRefresh.setActionCommand(UIAction.REFRESH_PORT.name());
         mBtnPortRefresh.addActionListener(this);
         mComPortPane.add(mBtnPortRefresh);
 
         mBtnPortOpen = new JButton("Open");
         mBtnPortOpen.setBounds(150, 90, 85, 30);
-        mBtnPortOpen.setActionCommand(Consts.ACTION_OPEN_PORT);
+        mBtnPortOpen.setActionCommand(UIAction.OPEN_PORT.name());
         mBtnPortOpen.addActionListener(this);
         mComPortPane.add(mBtnPortOpen);
 
         mBtnPortClose = new JButton("Close");
         mBtnPortClose.setBounds(240, 90, 85, 30);
-        mBtnPortClose.setActionCommand(Consts.ACTION_CLOSE_PORT);
+        mBtnPortClose.setActionCommand(UIAction.CLOSE_PORT.name());
         mBtnPortClose.addActionListener(this);
         mComPortPane.add(mBtnPortClose);
 
@@ -294,6 +294,7 @@ public class MainWindow implements ActionListener {
         mComboBauds.setSelectedIndex(0);
         mComboBauds.setEnabled(true);
         mComboBauds.setBounds(90, 55, 100, 30);
+        mComboBauds.setActionCommand(UIAction.COM_BAUZ_CHANGE.name());
         mComPortPane.add(mComboBauds);
 
         JLabel lblBaud = new JLabel("Baud(Hz):");
@@ -315,6 +316,7 @@ public class MainWindow implements ActionListener {
         mComboVGA = new JComboBox(mGraphicDevices);
         mComboVGA.setBounds(5, 20, 290, 30);
         mComboVGA.setSelectedIndex(0);
+        mComboVGA.setActionCommand(UIAction.VGA_PORT_CHANGE.name());
         mVgaOutputPane.add(mComboVGA);
 
         mBtnVGARefresh = new JButton("R");
@@ -325,7 +327,7 @@ public class MainWindow implements ActionListener {
             mBtnVGARefresh.setIcon(icon);
             mBtnVGARefresh.setText("");
         }
-        mBtnVGARefresh.setActionCommand(Consts.ACTION_REFRESH_VGA);
+        mBtnVGARefresh.setActionCommand(UIAction.REFRESH_VGA.name());
         mBtnVGARefresh.addActionListener(this);
         mVgaOutputPane.add(mBtnVGARefresh);
     }
@@ -349,14 +351,14 @@ public class MainWindow implements ActionListener {
 
         mBtnOpenProject = new JButton("Open Project");
         mBtnOpenProject.setBounds(100, 60, 120, 30);
-        mBtnOpenProject.setActionCommand(Consts.ACTION_OPEN_PROJECT);
+        mBtnOpenProject.setActionCommand(UIAction.OPEN_PROJECT.name());
         mBtnOpenProject.addActionListener(this);
         mProjectPane.add(mBtnOpenProject);
 
         mBtnPrint = new JButton("Print");
         mBtnPrint.setBounds(220, 60, 120, 30);
         mProjectPane.add(mBtnPrint);
-        mBtnPrint.setActionCommand(Consts.ACTION_PRINT);
+        mBtnPrint.setActionCommand(UIAction.START_PRINT.name());
         mBtnPrint.addActionListener(this);
 
     }
