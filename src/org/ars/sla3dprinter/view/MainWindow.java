@@ -14,6 +14,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.security.AccessControlException;
 import java.text.DecimalFormat;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -96,6 +97,30 @@ public class MainWindow implements ActionListener {
     private Image mImgRefresh;
     private NumberFormatter mIntegerInputFormat = new NumberFormatter(
                     new DecimalFormat());
+
+    // FileChooser
+    final JFileChooser mFileChooser;
+    {
+        JFileChooser fc = new JFileChooser();
+        try
+        {
+        fc.setDialogTitle("Open project");
+        fc.setFileFilter(new FileFilter() {
+            final Matcher matchLevelFile = Pattern.compile(".*\\.svg[z]?").matcher("");
+            public boolean accept(File file)
+            {
+                if (file.isDirectory()) return true;
+                matchLevelFile.reset(file.getName());
+                return matchLevelFile.matches();
+            }
+
+            public String getDescription() { return "SVG file (*.svg, *.svgz)"; }
+        });
+        } catch (AccessControlException ex) {
+            //Do not create file chooser if webstart refuses permissions
+        }
+        mFileChooser = fc;
+    }
 
     /**
      * Create the application.
@@ -481,25 +506,10 @@ public class MainWindow implements ActionListener {
     }
 
     private void openFileChooser() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Open project");
-        chooser.setFileFilter(new FileFilter() {
-            final Matcher matchLevelFile = Pattern.compile(".*\\.svg[z]?").matcher("");
-
-            public boolean accept(File file)
-            {
-                if (file.isDirectory()) return true;
-
-                matchLevelFile.reset(file.getName());
-                return matchLevelFile.matches();
-            }
-
-            public String getDescription() { return "SVG file (*.svg, *.svgz)"; }
-        });
-
-        int retValue = chooser.showOpenDialog(null);
+        if (mFileChooser == null) return;
+        int retValue = mFileChooser.showOpenDialog(null);
         if (retValue == JFileChooser.APPROVE_OPTION) {
-            mSelectedProject = chooser.getSelectedFile();
+            mSelectedProject = mFileChooser.getSelectedFile();
             if (mSelectedProject == null) {
                 return;
             }
