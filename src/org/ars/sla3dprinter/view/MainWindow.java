@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -31,7 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.text.NumberFormatter;
 
 import jssc.SerialPort;
@@ -479,15 +481,21 @@ public class MainWindow implements ActionListener {
     }
 
     private void openFileChooser() {
-        FileNameExtensionFilter svgFilter =
-                new FileNameExtensionFilter("Scalable Vector Graphic (.svg)",
-                        "svg");
-
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Open project");
-        chooser.addChoosableFileFilter(svgFilter);
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        chooser.setAcceptAllFileFilterUsed(false);
+        chooser.setFileFilter(new FileFilter() {
+            final Matcher matchLevelFile = Pattern.compile(".*\\.svg[z]?").matcher("");
+
+            public boolean accept(File file)
+            {
+                if (file.isDirectory()) return true;
+
+                matchLevelFile.reset(file.getName());
+                return matchLevelFile.matches();
+            }
+
+            public String getDescription() { return "SVG file (*.svg, *.svgz)"; }
+        });
 
         int retValue = chooser.showOpenDialog(null);
         if (retValue == JFileChooser.APPROVE_OPTION) {
