@@ -180,6 +180,7 @@ public class MainWindow implements ActionListener {
                 if (mSerialPort != null) {
                     closePort(mSerialPort);
                 }
+                System.exit(0);
             }
         });
         mFrmSla3dPrinter.setTitle("SLA 3D Printer");
