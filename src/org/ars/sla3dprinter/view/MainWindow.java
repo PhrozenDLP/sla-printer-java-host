@@ -541,6 +541,7 @@ public class MainWindow implements ActionListener {
             final JFrame f = new JFrame(config);
             SVGPanel svgPanel = new SVGPanel();
             svgPanel.setSvgURI(mSelectedProject.toURI());
+            svgPanel.setBackground(Color.BLACK);
             svgPanel.setScaleToFit(true);
             svgPanel.setAntiAlias(true);
             f.getContentPane().add(svgPanel);
