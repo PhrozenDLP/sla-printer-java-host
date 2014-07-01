@@ -1,7 +1,9 @@
 package org.ars.sla3dprinter.view;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -14,8 +16,14 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URI;
 import java.security.AccessControlException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +40,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileFilter;
@@ -45,7 +54,14 @@ import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Consts.UIAction;
 import org.ars.sla3dprinter.util.Utils;
 
-import com.kitfox.svg.app.beans.SVGPanel;
+import com.kitfox.svg.SVGCache;
+import com.kitfox.svg.SVGDiagram;
+import com.kitfox.svg.SVGElement;
+import com.kitfox.svg.SVGException;
+import com.kitfox.svg.SVGRoot;
+import com.kitfox.svg.SVGUniverse;
+import com.kitfox.svg.app.beans.SVGIcon;
+import com.kitfox.svg.xml.StyleAttribute;
 
 public class MainWindow implements ActionListener {
     private static final int START_POS_X    = 100;
@@ -540,36 +556,97 @@ public class MainWindow implements ActionListener {
             GraphicsDevice device = (GraphicsDevice) selected;
             GraphicsConfiguration config = device.getDefaultConfiguration();
             final JFrame f = new JFrame(config);
-            SVGPanel svgPanel = new SVGPanel();
-            svgPanel.setSvgURI(mSelectedProject.toURI());
-            svgPanel.setBackground(Color.BLACK);
-            svgPanel.setScaleToFit(true);
-            svgPanel.setAntiAlias(true);
-            f.getContentPane().add(svgPanel);
-            f.addKeyListener(new KeyListener() {
-                @Override
-                public void keyTyped(KeyEvent event) {
-                }
+            final ProjectWorker worker;
 
-                @Override
-                public void keyReleased(KeyEvent event) {
-                    switch (event.getKeyCode()) {
-                        case KeyEvent.VK_ESCAPE:
-                            f.dispose();
+            // Load target SVG file for the 3d model
+            SVGUniverse universe = SVGCache.getSVGUniverse();
+            SVGDiagram diagram = universe.getDiagram(mSelectedProject.toURI());
+            SVGRoot root = diagram.getRoot();
+            if (root != null) {
+                StyleAttribute width = root.getPresAbsolute("width");
+                StyleAttribute height = root.getPresAbsolute("height");
+                int targetWidth = 1000;
+                float scaleW = targetWidth / width.getFloatValue();
+                int targetHeight = Math.round(height.getFloatValue() * scaleW);
+
+                String attribScale = String.format("scale(%d)", Math.round(scaleW));
+                final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight + 15, attribScale);
+                // Load target SVG file for the 3d model
+                worker = new ProjectWorker(myPanel, root);
+
+                f.getContentPane().add(myPanel);
+                f.addKeyListener(new KeyListener() {
+                    @Override
+                    public void keyTyped(KeyEvent event) {}
+
+                    @Override
+                    public void keyReleased(KeyEvent event) {
+                        switch (event.getKeyCode()) {
+                            case KeyEvent.VK_ESCAPE:
+                                f.dispose();
+                                if (worker != null) {
+                                    worker.cancel(true);
+                                }
+                        }
                     }
+
+                    @Override
+                    public void keyPressed(KeyEvent event) {}
+                });
+                f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                f.pack();
+                f.setVisible(true);
+
+                if (Utils.isMac()) {
+                    Utils.enableFullScreenMode(f);
                 }
 
-                @Override
-                public void keyPressed(KeyEvent event) {
-                }
-            });
-            f.dispose();
-            f.setExtendedState(JFrame.MAXIMIZED_BOTH);
-            f.setVisible(true);
-
-            if (Utils.isMac()) {
-                Utils.enableFullScreenMode(f);
+                worker.execute();
             }
+        }
+    }
+
+    public static class ProjectWorker extends SwingWorker<Void, SVGElement> {
+
+        DynamicIconPanel panel;
+        SVGRoot root;
+
+        public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root) {
+            panel = _panel;
+            root = _root;
+        }
+
+        @Override
+        protected Void doInBackground() throws Exception {
+            int total = root.getNumChildren();
+            List<SVGElement> children = new ArrayList<SVGElement>();
+            children = root.getChildren(children);
+            SVGElement element = null;
+            for (int i = 0; i < total; i++) {
+                element = children.get(i);
+                publish(element);
+                Thread.sleep(300);
+            }
+            return null;
+        }
+
+        @Override
+        protected void process(List<SVGElement> trunks) {
+            if (isCancelled()) {
+                return;
+            }
+            if (trunks.size() != 1) {
+                return;
+            }
+            SVGElement element = trunks.get(0);
+            panel.replaceLayerSVG(element);
+            System.out.println("Printing " + element.getId());
+        }
+
+        @Override
+        protected void done() {
+            panel = null;
+            root = null;
         }
     }
 
@@ -615,5 +692,78 @@ public class MainWindow implements ActionListener {
 
     private boolean isPortAvailable(SerialPort port) {
         return port != null && port.isOpened();
+    }
+
+}
+
+class DynamicIconPanel extends JPanel {
+    public static final long serialVersionUID = 0;
+
+    final SVGIcon icon;
+    URI uri;
+
+    SVGUniverse universe = SVGCache.getSVGUniverse();
+    SVGDiagram diagram;
+    SVGElement layerElement;
+
+    public DynamicIconPanel(int width, int height, String scale)
+    {
+        StringReader reader = new StringReader(makeDynamicSVG(width, height, scale));
+        uri = universe.loadSVG(reader, "myImage");
+        icon = new SVGIcon();
+        icon.setAntiAlias(true);
+        icon.setSvgURI(uri);
+
+        setBackground(Color.BLACK);
+        setPreferredSize(new Dimension(width, height));
+    }
+
+    public void paintComponent(Graphics g)
+    {
+        final int width = getWidth();
+        final int height = getHeight();
+
+        g.setColor(getBackground());
+        g.fillRect(0, 0, width, height);
+
+        icon.paintIcon(this, g, 0, 0);
+    }
+
+    private String makeDynamicSVG(int width, int height, String scale)
+    {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+
+        pw.println("<svg width=\"" + width +"\" height=\"" + height + "\" transform=\"" + scale + "\"></svg>");
+
+        pw.close();
+        return sw.toString();
+    }
+
+    public void replaceLayerSVG(SVGElement element)
+    {
+        if (element == null) return;
+
+        try {
+            diagram = universe.getDiagram(uri);
+            SVGRoot root = diagram.getRoot();
+            if (layerElement != null) {
+                root.removeChild(layerElement);
+            }
+            layerElement = element;
+            root.loaderAddChild(null, layerElement);
+
+            // Update animation state or group and it's decendants so that it
+            // reflects new animation values.
+            // We could also call diagram.update(0.0) or
+            // SVGCache.getSVGUniverse().update(). Note that calling
+            // circle.update(0.0) won't display anything since even though it
+            // will update the circle's state,
+            // it won't update the parent group's state.
+            universe.updateTime();
+            repaint();
+        } catch (SVGException e) {
+            e.printStackTrace();
+        }
     }
 }
