@@ -1,7 +1,6 @@
 package org.ars.sla3dprinter;
 
-import java.awt.EventQueue;
-
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.ars.sla3dprinter.util.Utils;
@@ -23,7 +22,7 @@ public class SLA3DPrinter {
             Utils.log(ex);
         }
 
-        EventQueue.invokeLater(new Runnable() {
+        SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
                     MainWindow window = new MainWindow();
