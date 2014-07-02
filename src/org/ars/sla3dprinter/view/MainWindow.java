@@ -47,6 +47,8 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.NumberFormatter;
 
 import jssc.SerialPort;
+import jssc.SerialPortEvent;
+import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 
@@ -180,8 +182,8 @@ public class MainWindow implements ActionListener {
      */
     private void initViews() {
         initWindowFrame();
-        initStepMotorPanel();
-        initServoMotorPanel();
+        initPlatformMotorPanel();
+        initTankMotorPanel();
         initComPortPanel();
         initVGAOutputPanel();
         initInputProjectPanel();
@@ -208,12 +210,12 @@ public class MainWindow implements ActionListener {
     }
 
     // Step motor pane
-    private void initStepMotorPanel() {
+    private void initPlatformMotorPanel() {
         mStepMotorPane = new JPanel();
         mStepMotorPane.setForeground(Color.BLUE);
         mStepMotorPane.setToolTipText("");
         mStepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
-                EtchedBorder.LOWERED, null, null), "Step Motor control",
+                EtchedBorder.LOWERED, null, null), "Platform motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
         mStepMotorPane.setBounds(368, 6, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
@@ -238,28 +240,31 @@ public class MainWindow implements ActionListener {
         mInputMm2Steps.setFont(mUIFont);
         mInputMm2Steps.setColumns(10);
         mInputMm2Steps.setBounds(105, 20, 80, 30);
+        mInputMm2Steps.setValue(20);
         mStepMotorPane.add(mInputMm2Steps);
 
         mInputLayerHeight = new JFormattedTextField(mIntegerInputFormat);
         mInputLayerHeight.setFont(mUIFont);
         mInputLayerHeight.setColumns(10);
         mInputLayerHeight.setBounds(155, 60, 80, 30);
+        mInputLayerHeight.setValue(1);
         mStepMotorPane.add(mInputLayerHeight);
 
         mInputLayerExpo = new JFormattedTextField(mIntegerInputFormat);
         mInputLayerExpo.setFont(mUIFont);
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(130, 100, 80, 30);
+        mInputLayerExpo.setValue(30);
         mStepMotorPane.add(mInputLayerExpo);
     }
 
-    private void initServoMotorPanel() {
+    private void initTankMotorPanel() {
         JPanel mServoMotorPane = new JPanel();
         mServoMotorPane.setLayout(null);
         mServoMotorPane.setToolTipText("");
         mServoMotorPane.setForeground(Color.BLUE);
         mServoMotorPane.setBorder(new TitledBorder(new EtchedBorder(
-                EtchedBorder.LOWERED, null, null), "Servo Motor control",
+                EtchedBorder.LOWERED, null, null), "Tank motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
         mServoMotorPane.setBounds(368, 168, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mServoMotorPane);
@@ -278,12 +283,14 @@ public class MainWindow implements ActionListener {
         mInputTankHDeg.setFont(mUIFont);
         mInputTankHDeg.setColumns(10);
         mInputTankHDeg.setBounds(140, 20, 80, 30);
+        mInputTankHDeg.setValue(0);
         mServoMotorPane.add(mInputTankHDeg);
 
         mInputTankRestAng = new JFormattedTextField(mIntegerInputFormat);
         mInputTankRestAng.setFont(mUIFont);
         mInputTankRestAng.setColumns(10);
         mInputTankRestAng.setBounds(140, 60, 80, 30);
+        mInputTankRestAng.setValue(10);
         mServoMotorPane.add(mInputTankRestAng);
     }
 
@@ -437,6 +444,7 @@ public class MainWindow implements ActionListener {
         mInputBaseExpo = new JFormattedTextField(mIntegerInputFormat);
         mInputBaseExpo.setFont(mUIFont);
         mInputBaseExpo.setBounds(175, 20, 80, 30);
+        mInputBaseExpo.setValue(30);
         mMiscPane.add(mInputBaseExpo);
         mInputBaseExpo.setColumns(10);
     }
@@ -490,7 +498,7 @@ public class MainWindow implements ActionListener {
                     return;
                 }
                 mSerialPort = openPort(mSelectedPort);
-                if (mSerialPort != null) {
+                if (isPortAvailable(mSerialPort)) {
                     mBtnPortOpen.setEnabled(false);
                     mComboPorts.setEnabled(false);
                     mBtnPortClose.setEnabled(true);
@@ -545,6 +553,10 @@ public class MainWindow implements ActionListener {
         }
     }
 
+    SVGUniverse mSVGUniverse = SVGCache.getSVGUniverse();
+    SVGDiagram mSelectedSVGDiagram;
+    SVGRoot mSelectedSVGRoot;
+
     private void promptFakeFrame() {
         if (mSelectedProject == null) {
             showErrorDialog("Choose a SVG by \'Open Project\'");
@@ -556,6 +568,7 @@ public class MainWindow implements ActionListener {
             GraphicsDevice device = (GraphicsDevice) selected;
             GraphicsConfiguration config = device.getDefaultConfiguration();
             final JFrame f = new JFrame(config);
+            f.setUndecorated(true);
             final ProjectWorker worker;
 
             // Load target SVG file for the 3d model
@@ -565,7 +578,7 @@ public class MainWindow implements ActionListener {
             if (root != null) {
                 StyleAttribute width = root.getPresAbsolute("width");
                 StyleAttribute height = root.getPresAbsolute("height");
-                int targetWidth = 1000;
+                int targetWidth = device.getDisplayMode().getWidth();
                 float scaleW = targetWidth / width.getFloatValue();
                 int targetHeight = Math.round(height.getFloatValue() * scaleW);
 
@@ -600,6 +613,7 @@ public class MainWindow implements ActionListener {
                 if (Utils.isMac()) {
                     Utils.enableFullScreenMode(f);
                 }
+                device.setFullScreenWindow(f);
 
                 worker.execute();
             }
@@ -665,6 +679,10 @@ public class MainWindow implements ActionListener {
             serialPort.setParams(SerialPort.BAUDRATE_9600,
                     SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
                     SerialPort.PARITY_NONE);
+
+            int mask = SerialPort.MASK_RXCHAR + SerialPort.MASK_CTS + SerialPort.MASK_DSR;//Prepare mask
+            serialPort.setEventsMask(mask);//Set mask
+            serialPort.addEventListener(new SerialPortReader(serialPort));//Add SerialPortEventListener
             return serialPort;
         } catch (SerialPortException ex) {
             Utils.log(ex);
@@ -680,6 +698,10 @@ public class MainWindow implements ActionListener {
             Utils.log(ex);
             return false;
         }
+    }
+
+    private void writeToPort(SerialPort port, String data) {
+        writeToPort(port, data.getBytes());
     }
 
     private void writeToPort(SerialPort port, byte[] data) {
@@ -764,6 +786,44 @@ class DynamicIconPanel extends JPanel {
             repaint();
         } catch (SVGException e) {
             e.printStackTrace();
+        }
+    }
+}
+
+class SerialPortReader implements SerialPortEventListener {
+
+    private final SerialPort serialPort;
+
+    public SerialPortReader(SerialPort serial) {
+        serialPort = serial;
+    }
+
+    public void serialEvent(SerialPortEvent event) {
+        if(event.isRXCHAR()){//If data is available
+            if (event.getEventValue() > 0) {
+                try {
+                    System.out.println(serialPort.readString());
+                }
+                catch (SerialPortException ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
+        else if(event.isCTS()){//If CTS line has changed state
+            if(event.getEventValue() == 1){//If line is ON
+                System.out.println("CTS - ON");
+            }
+            else {
+                System.out.println("CTS - OFF");
+            }
+        }
+        else if(event.isDSR()){///If DSR line has changed state
+            if(event.getEventValue() == 1){//If line is ON
+                System.out.println("DSR - ON");
+            }
+            else {
+                System.out.println("DSR - OFF");
+            }
         }
     }
 }
