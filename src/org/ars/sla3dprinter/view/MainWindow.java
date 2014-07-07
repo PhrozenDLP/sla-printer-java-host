@@ -56,6 +56,7 @@ import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Consts.UIAction;
 import org.ars.sla3dprinter.util.Utils;
 
+import com.kitfox.svg.Circle;
 import com.kitfox.svg.SVGCache;
 import com.kitfox.svg.SVGDiagram;
 import com.kitfox.svg.SVGElement;
@@ -562,106 +563,100 @@ public class MainWindow implements ActionListener {
             showErrorDialog("Choose a SVG by \'Open Project\'");
             return;
         }
+        if (mSelectedPort == null) {
+            showErrorDialog("Connect to printer before start printing");
+            return;
+        }
 
+        // 1. Collect printing related data
+        PrintingInfo info = new PrintingInfo();
+        info.baseExpoTimeInSeconds = Integer.parseInt(mInputBaseExpo.getText());
+        info.layerExpoTimeInSeconds = Integer.parseInt(mInputLayerExpo.getText());
+        info.layerHeightInMms = Integer.parseInt(mInputLayerHeight.getText());
+        info.stepsPerMm = Integer.parseInt(mInputMm2Steps.getText());
+        info.tankHorizontalDeg = Integer.parseInt(mInputTankHDeg.getText());
+        info.tankResetDeg = Integer.parseInt(mInputTankRestAng.getText());
+
+        // 2. Prepare GraphicsDevice
         Object selected = mComboVGA.getSelectedItem();
+        final GraphicsDevice device;
+        final GraphicsConfiguration config;
+        final JFrame f;
         if (selected instanceof GraphicsDevice) {
-            GraphicsDevice device = (GraphicsDevice) selected;
-            GraphicsConfiguration config = device.getDefaultConfiguration();
-            final JFrame f = new JFrame(config);
-            f.setUndecorated(true);
-            final ProjectWorker worker;
+            device = (GraphicsDevice) selected;
+            config = device.getDefaultConfiguration();
+            f = new JFrame(config);
+        } else {
+            device = null;
+            config = null;
+            f = null;
+        }
 
-            // Load target SVG file for the 3d model
-            SVGUniverse universe = SVGCache.getSVGUniverse();
-            SVGDiagram diagram = universe.getDiagram(mSelectedProject.toURI());
-            SVGRoot root = diagram.getRoot();
-            if (root != null) {
-                StyleAttribute width = root.getPresAbsolute("width");
-                StyleAttribute height = root.getPresAbsolute("height");
-                int targetWidth = device.getDisplayMode().getWidth();
-                float scaleW = targetWidth / width.getFloatValue();
-                int targetHeight = Math.round(height.getFloatValue() * scaleW);
+        if (device == null || config == null || f == null) {
+            showErrorDialog("Printing projector not ready");
+            return;
+        }
 
-                String attribScale = String.format("scale(%d)", Math.round(scaleW));
-                final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight + 15, attribScale);
-                // Load target SVG file for the 3d model
-                worker = new ProjectWorker(myPanel, root);
+        // 3. Prepare Worker
+        final ProjectWorker worker;
 
-                f.getContentPane().add(myPanel);
-                f.addKeyListener(new KeyListener() {
-                    @Override
-                    public void keyTyped(KeyEvent event) {}
+        // Load target SVG file for the 3d model
+        SVGUniverse universe = SVGCache.getSVGUniverse();
+        SVGDiagram diagram = universe.getDiagram(mSelectedProject.toURI());
+        if (diagram == null) {
+            showErrorDialog("Cannot load project frile");
+            return;
+        }
 
-                    @Override
-                    public void keyReleased(KeyEvent event) {
-                        switch (event.getKeyCode()) {
-                            case KeyEvent.VK_ESCAPE:
-                                f.dispose();
-                                if (worker != null) {
-                                    worker.cancel(true);
-                                }
+        SVGRoot root = diagram.getRoot();
+        if (root == null) {
+            showErrorDialog("Project content has problem");
+            return;
+        }
+
+        StyleAttribute width = root.getPresAbsolute("width");
+        StyleAttribute height = root.getPresAbsolute("height");
+        int targetWidth = device.getDisplayMode().getWidth();
+        float scaleW = targetWidth / width.getFloatValue();
+        int targetHeight = Math.round(height.getFloatValue() * scaleW);
+
+        String attribScale = String.format("scale(%d)", Math.round(scaleW));
+        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, attribScale);
+        // Load target SVG file for the 3d model
+        worker = new ProjectWorker(myPanel, root, mSerialPort);
+
+        f.getContentPane().add(myPanel);
+        f.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent event) {}
+
+            @Override
+            public void keyReleased(KeyEvent event) {
+                switch (event.getKeyCode()) {
+                    case KeyEvent.VK_ESCAPE:
+                        f.dispose();
+                        if (worker != null) {
+                            worker.cancel(true);
                         }
-                    }
-
-                    @Override
-                    public void keyPressed(KeyEvent event) {}
-                });
-                f.setExtendedState(JFrame.MAXIMIZED_BOTH);
-                f.pack();
-                f.setVisible(true);
-
-                if (Utils.isMac()) {
-                    Utils.enableFullScreenMode(f);
+                        f.removeKeyListener(this);
                 }
-                device.setFullScreenWindow(f);
-
-                worker.execute();
             }
+
+            @Override
+            public void keyPressed(KeyEvent event) {}
+        });
+        f.setUndecorated(true);
+        f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        f.pack();
+        f.setVisible(true);
+
+        if (Utils.isMac()) {
+            Utils.enableFullScreenMode(f);
         }
-    }
+        device.setFullScreenWindow(f);
 
-    public static class ProjectWorker extends SwingWorker<Void, SVGElement> {
-
-        DynamicIconPanel panel;
-        SVGRoot root;
-
-        public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root) {
-            panel = _panel;
-            root = _root;
-        }
-
-        @Override
-        protected Void doInBackground() throws Exception {
-            int total = root.getNumChildren();
-            List<SVGElement> children = new ArrayList<SVGElement>();
-            children = root.getChildren(children);
-            SVGElement element = null;
-            for (int i = 0; i < total; i++) {
-                element = children.get(i);
-                publish(element);
-                Thread.sleep(300);
-            }
-            return null;
-        }
-
-        @Override
-        protected void process(List<SVGElement> trunks) {
-            if (isCancelled()) {
-                return;
-            }
-            if (trunks.size() != 1) {
-                return;
-            }
-            SVGElement element = trunks.get(0);
-            panel.replaceLayerSVG(element);
-            System.out.println("Printing " + element.getId());
-        }
-
-        @Override
-        protected void done() {
-            panel = null;
-            root = null;
-        }
+        // Kick-off worker
+        worker.execute();
     }
 
     private void showErrorDialog(String message) {
@@ -682,7 +677,6 @@ public class MainWindow implements ActionListener {
 
             int mask = SerialPort.MASK_RXCHAR + SerialPort.MASK_CTS + SerialPort.MASK_DSR;//Prepare mask
             serialPort.setEventsMask(mask);//Set mask
-            serialPort.addEventListener(new SerialPortReader(serialPort));//Add SerialPortEventListener
             return serialPort;
         } catch (SerialPortException ex) {
             Utils.log(ex);
@@ -718,6 +712,100 @@ public class MainWindow implements ActionListener {
 
 }
 
+class ProjectWorker extends SwingWorker<Void, SVGElement>
+    implements SerialPortEventListener{
+
+    private DynamicIconPanel panel;
+    private SVGRoot root;
+    private SerialPort serialPort;
+
+    // Dummy item for black screen
+    private final SVGElement circle = new Circle();
+
+    private final Object lock = new Object();
+
+    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial) {
+        panel = _panel;
+        root = _root;
+        serialPort = _serial;
+    }
+
+
+    @Override
+    protected Void doInBackground() throws Exception {
+        serialPort.addEventListener(this);
+
+        int total = root.getNumChildren();
+        List<SVGElement> children = new ArrayList<SVGElement>();
+        children = root.getChildren(children);
+        SVGElement element = null;
+        for (int i = 0; i < total; i++) {
+            element = children.get(i);
+            publish(element);
+            synchronized (lock) {
+                lock.wait();
+            }
+            publish(circle);
+
+            synchronized (lock) {
+                lock.wait();
+            }
+//            Thread.sleep(300);
+        }
+        return null;
+    }
+
+    @Override
+    protected void process(List<SVGElement> trunks) {
+        if (isCancelled()) {
+            return;
+        }
+        System.out.println(trunks);
+        System.out.println(trunks.size());
+        if (trunks.size() != 1) {
+            return;
+        }
+        SVGElement element = trunks.get(0);
+        panel.replaceLayerSVG(element);
+        System.out.println("Printing " + element.getId());
+    }
+
+    @Override
+    protected void done() {
+        panel = null;
+        root = null;
+        try {
+            serialPort.removeEventListener();
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+        }
+        serialPort = null;
+    }
+
+    public void serialEvent(SerialPortEvent event) {
+        if (event.isRXCHAR()) { //If data is available
+            if (event.getEventValue() > 0) {
+                try {
+                    if (getState() == StateValue.STARTED) {
+                        synchronized (lock) {
+                            lock.notify();
+                        }
+                    }
+                    System.out.println(serialPort.readString());
+                } catch (SerialPortException ex) {
+                    System.out.println(ex);
+                }
+            }
+        } else if (event.isCTS()) { //If CTS line has changed state
+            System.out.println((event.getEventValue() == 1) ? "CTS - ON" : "CTS - OFF");
+        } else if (event.isDSR()) { //If DSR line has changed state
+            System.out.println((event.getEventValue() == 1) ? "DSR - ON" : "DSR - OFF");
+        } else {
+            System.out.println(event.toString());
+        }
+    }
+}
+
 class DynamicIconPanel extends JPanel {
     public static final long serialVersionUID = 0;
 
@@ -732,6 +820,7 @@ class DynamicIconPanel extends JPanel {
     {
         StringReader reader = new StringReader(makeDynamicSVG(width, height, scale));
         uri = universe.loadSVG(reader, "myImage");
+        diagram = universe.getDiagram(uri);
         icon = new SVGIcon();
         icon.setAntiAlias(true);
         icon.setSvgURI(uri);
@@ -762,17 +851,17 @@ class DynamicIconPanel extends JPanel {
         return sw.toString();
     }
 
-    public void replaceLayerSVG(SVGElement element)
-    {
-        if (element == null) return;
+    public void replaceLayerSVG(SVGElement element) {
+        resetLayers();
+
+        if (element == null) {
+            return;
+        }
+
+        layerElement = element;
 
         try {
-            diagram = universe.getDiagram(uri);
             SVGRoot root = diagram.getRoot();
-            if (layerElement != null) {
-                root.removeChild(layerElement);
-            }
-            layerElement = element;
             root.loaderAddChild(null, layerElement);
 
             // Update animation state or group and it's decendants so that it
@@ -788,42 +877,165 @@ class DynamicIconPanel extends JPanel {
             e.printStackTrace();
         }
     }
+
+    public void resetLayers() {
+        try {
+            SVGRoot root = diagram.getRoot();
+            root.removeChild(layerElement);
+
+            universe.updateTime();
+            repaint();
+        } catch (SVGException e) {
+            e.printStackTrace();
+        }
+    }
 }
 
-class SerialPortReader implements SerialPortEventListener {
+class PrintingInfo {
+    int baseExpoTimeInSeconds;
+    int layerExpoTimeInSeconds;
+    int layerHeightInMms;
+    int stepsPerMm;
+    int tankHorizontalDeg;
+    int tankResetDeg;
+}
 
-    private final SerialPort serialPort;
+interface PrinterExecutable {
+    public String getCommand();
+}
 
-    public SerialPortReader(SerialPort serial) {
-        serialPort = serial;
+class PlatformMovement implements PrinterExecutable {
+    public static final int DIRECTION_UP    = 0;
+    public static final int DIRECTION_DOWN  = 1;
+
+    private static final String CODE_DIR_UP     = "2";
+    private static final String CODE_DIR_DOWN   = "3";
+
+    private static final String PLATFORM_MOVEMENT_PATTERN = "G%2d Z%d;";
+    final int direction;
+    final int steps;
+
+    public PlatformMovement(int _dir, int _steps) {
+        direction = _dir;
+        steps = _steps;
     }
 
-    public void serialEvent(SerialPortEvent event) {
-        if(event.isRXCHAR()){//If data is available
-            if (event.getEventValue() > 0) {
-                try {
-                    System.out.println(serialPort.readString());
-                }
-                catch (SerialPortException ex) {
-                    System.out.println(ex);
-                }
-            }
+    @Override
+    public String getCommand() {
+        return String.format(PLATFORM_MOVEMENT_PATTERN, getDirectionCode(), steps);
+    }
+
+    private String getDirectionCode() {
+        switch (direction) {
+            case DIRECTION_DOWN:
+                return CODE_DIR_DOWN;
+            case DIRECTION_UP:
+                return CODE_DIR_UP;
+            default:
+                throw new IllegalArgumentException("Invalid direction code: " + direction);
         }
-        else if(event.isCTS()){//If CTS line has changed state
-            if(event.getEventValue() == 1){//If line is ON
-                System.out.println("CTS - ON");
-            }
-            else {
-                System.out.println("CTS - OFF");
-            }
+    }
+}
+
+class PauseCommand implements PrinterExecutable {
+    private static final String PAUSE_COMMAND_PATTERN = "G04 P%d;";
+    final int pauseTimeInSeconds;
+
+    public PauseCommand(int _time) {
+        pauseTimeInSeconds = _time;
+    }
+
+    @Override
+    public String getCommand() {
+        return String.format(PAUSE_COMMAND_PATTERN, pauseTimeInSeconds);
+    }
+}
+
+class TankMovement implements PrinterExecutable {
+    public static final int DIRECTION_UP    = 0;
+    public static final int DIRECTION_DOWN  = 1;
+
+    private static final String CODE_DIR_UP     = "2";
+    private static final String CODE_DIR_DOWN   = "3";
+
+    private static final String TANK_COMMAND_PATTERN = "M%2d Z%d;";
+    final int direction;
+    final int steps;
+
+    public TankMovement(int _dir, int _steps) {
+        direction = _dir;
+        steps = _steps;
+    }
+
+    @Override
+    public String getCommand() {
+        return String.format(TANK_COMMAND_PATTERN, getDirectionCode(), steps);
+    }
+
+    private String getDirectionCode() {
+        switch (direction) {
+            case DIRECTION_DOWN:
+                return CODE_DIR_DOWN;
+            case DIRECTION_UP:
+                return CODE_DIR_UP;
+            default:
+                throw new IllegalArgumentException("Invalid direction code: " + direction);
         }
-        else if(event.isDSR()){///If DSR line has changed state
-            if(event.getEventValue() == 1){//If line is ON
-                System.out.println("DSR - ON");
-            }
-            else {
-                System.out.println("DSR - OFF");
-            }
+    }
+}
+
+class ProjectorCommand implements PrinterExecutable {
+    private static final String PROJECTOR_ON_PATTERN    = "G50";
+    private static final String PROJECTOR_OFF_PATTERN   = "G51";
+
+    private final boolean makeOn;
+
+    public ProjectorCommand(boolean _toOn) {
+        makeOn = _toOn;
+    }
+
+    @Override
+    public String getCommand() {
+        return makeOn ? PROJECTOR_ON_PATTERN : PROJECTOR_OFF_PATTERN;
+    }
+}
+
+/**
+ * G02 Z(steps); => linear move up <br/>
+ * G03 Z(steps); => linear move down <br/>
+ * G04 P(seconds); => delay <br/>
+ * G50; => Send power on command <br/>
+ * G51; => Send power off command <br/>
+ * M02 Z(steps); => rotate tank up <br/>
+ * M03 Z(steps); => rotate tank down <br/>
+ * M100; => this help message <br/>
+ * @author jimytc
+ */
+class PrinterScriptFactory {
+    public static final int PAUSE_TIME_DEFAULT = 1; // 1 second
+
+    public static List<PrinterExecutable> generateCommandForResetPlatform() {
+        ArrayList<PrinterExecutable> homeCommandsList = new ArrayList<PrinterExecutable>();
+        for (int i = 0; i < 10; i++) {
+            homeCommandsList.add(generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000));
+            homeCommandsList.add(generatePauseCommand(PAUSE_TIME_DEFAULT));
         }
+        return homeCommandsList;
+    }
+
+    public static PrinterExecutable generatePlatformMovement(int dir, int steps) {
+        return new PlatformMovement(dir, steps);
+    }
+
+    public static PrinterExecutable generatePauseCommand(int time) {
+        return new PauseCommand(time);
+    }
+
+    public static PrinterExecutable generateTankMovement(int dir, int steps) {
+        return new TankMovement(dir, steps);
+    }
+
+    public static PrinterExecutable generateProjectorCommand(boolean toOn) {
+        return new ProjectorCommand(toOn);
     }
 }
