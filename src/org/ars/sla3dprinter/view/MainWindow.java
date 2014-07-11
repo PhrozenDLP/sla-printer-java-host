@@ -34,11 +34,11 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.border.EtchedBorder;
@@ -54,6 +54,7 @@ import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Consts.UIAction;
+import org.ars.sla3dprinter.util.TextUtils;
 import org.ars.sla3dprinter.util.Utils;
 
 import com.kitfox.svg.Circle;
@@ -97,12 +98,12 @@ public class MainWindow implements ActionListener {
     private JButton mBtnVGARefresh;
 
     // UI components for printing config
-    private JFormattedTextField mInputBaseExpo;
-    private JFormattedTextField mInputMm2Steps;
-    private JFormattedTextField mInputLayerHeight;
-    private JFormattedTextField mInputLayerExpo;
-    private JFormattedTextField mInputTankHDeg;
-    private JFormattedTextField mInputTankRestAng;
+    private JTextField mInputBaseExpo;
+    private JTextField mInputMm2Steps;
+    private JTextField mInputLayerHeight;
+    private JTextField mInputLayerExpo;
+    private JTextField mInputTankHDeg;
+    private JTextField mInputTankRestAng;
 
     // UI components for target project
     private JPanel mProjectPane;
@@ -237,25 +238,22 @@ public class MainWindow implements ActionListener {
         lblLayerExposure.setBounds(10, 100, 120, 30);
         mStepMotorPane.add(lblLayerExposure);
 
-        mInputMm2Steps = new JFormattedTextField(mIntegerInputFormat);
+        mInputMm2Steps = new JTextField("20");
         mInputMm2Steps.setFont(mUIFont);
         mInputMm2Steps.setColumns(10);
         mInputMm2Steps.setBounds(105, 20, 80, 30);
-        mInputMm2Steps.setValue(20);
         mStepMotorPane.add(mInputMm2Steps);
 
-        mInputLayerHeight = new JFormattedTextField(mIntegerInputFormat);
+        mInputLayerHeight = new JTextField("1");
         mInputLayerHeight.setFont(mUIFont);
         mInputLayerHeight.setColumns(10);
         mInputLayerHeight.setBounds(155, 60, 80, 30);
-        mInputLayerHeight.setValue(1);
         mStepMotorPane.add(mInputLayerHeight);
 
-        mInputLayerExpo = new JFormattedTextField(mIntegerInputFormat);
+        mInputLayerExpo = new JTextField("30");
         mInputLayerExpo.setFont(mUIFont);
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(130, 100, 80, 30);
-        mInputLayerExpo.setValue(30);
         mStepMotorPane.add(mInputLayerExpo);
     }
 
@@ -280,18 +278,16 @@ public class MainWindow implements ActionListener {
         lblTankResetAngle.setBounds(10, 60, 120, 30);
         mServoMotorPane.add(lblTankResetAngle);
 
-        mInputTankHDeg = new JFormattedTextField(mIntegerInputFormat);
+        mInputTankHDeg = new JTextField("0");
         mInputTankHDeg.setFont(mUIFont);
         mInputTankHDeg.setColumns(10);
         mInputTankHDeg.setBounds(140, 20, 80, 30);
-        mInputTankHDeg.setValue(0);
         mServoMotorPane.add(mInputTankHDeg);
 
-        mInputTankRestAng = new JFormattedTextField(mIntegerInputFormat);
+        mInputTankRestAng = new JTextField("10");
         mInputTankRestAng.setFont(mUIFont);
         mInputTankRestAng.setColumns(10);
         mInputTankRestAng.setBounds(140, 60, 80, 30);
-        mInputTankRestAng.setValue(10);
         mServoMotorPane.add(mInputTankRestAng);
     }
 
@@ -442,10 +438,9 @@ public class MainWindow implements ActionListener {
 
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
 
-        mInputBaseExpo = new JFormattedTextField(mIntegerInputFormat);
+        mInputBaseExpo = new JTextField("30");
         mInputBaseExpo.setFont(mUIFont);
         mInputBaseExpo.setBounds(175, 20, 80, 30);
-        mInputBaseExpo.setValue(30);
         mMiscPane.add(mInputBaseExpo);
         mInputBaseExpo.setColumns(10);
     }
@@ -620,10 +615,9 @@ public class MainWindow implements ActionListener {
         float scaleW = targetWidth / width.getFloatValue();
         int targetHeight = Math.round(height.getFloatValue() * scaleW);
 
-        String attribScale = String.format("scale(%d)", Math.round(scaleW));
-        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, attribScale);
+        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, Math.round(scaleW));
         // Load target SVG file for the 3d model
-        worker = new ProjectWorker(myPanel, root, mSerialPort);
+        worker = new ProjectWorker(myPanel, root, mSerialPort, info);
 
         f.getContentPane().add(myPanel);
         f.addKeyListener(new KeyListener() {
@@ -653,7 +647,7 @@ public class MainWindow implements ActionListener {
         if (Utils.isMac()) {
             Utils.enableFullScreenMode(f);
         }
-        device.setFullScreenWindow(f);
+//        device.setFullScreenWindow(f);
 
         // Kick-off worker
         worker.execute();
@@ -694,18 +688,6 @@ public class MainWindow implements ActionListener {
         }
     }
 
-    private void writeToPort(SerialPort port, String data) {
-        writeToPort(port, data.getBytes());
-    }
-
-    private void writeToPort(SerialPort port, byte[] data) {
-        try {
-            port.writeBytes(data);
-        } catch (SerialPortException ex) {
-            Utils.log(ex);
-        }
-    }
-
     private boolean isPortAvailable(SerialPort port) {
         return port != null && port.isOpened();
     }
@@ -718,40 +700,156 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     private DynamicIconPanel panel;
     private SVGRoot root;
     private SerialPort serialPort;
+    private PrintingInfo printingInfo;
 
     // Dummy item for black screen
     private final SVGElement circle = new Circle();
 
     private final Object lock = new Object();
 
-    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial) {
+    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial, PrintingInfo info) {
+        ensurePrintingInfoValid(info);
+
         panel = _panel;
         root = _root;
         serialPort = _serial;
+        printingInfo = info;
     }
 
+    private void ensurePrintingInfoValid(PrintingInfo info) {
+        if (info == null) {
+            throw new IllegalArgumentException("PrintingInfo must not be null");
+        }
+        if (!info.valid()) {
+            throw new IllegalArgumentException("There are something wrong in printing setup. " + info.toString());
+        }
+    }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Void doInBackground() throws Exception {
+        if (serialPort == null || !serialPort.isOpened()) {
+            return null;
+        }
         serialPort.addEventListener(this);
 
+        int i;
         int total = root.getNumChildren();
         List<SVGElement> children = new ArrayList<SVGElement>();
         children = root.getChildren(children);
         SVGElement element = null;
-        for (int i = 0; i < total; i++) {
+
+        List<CommandBase> commandsList;
+        CommandBase cmd;
+
+        // Return home
+        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
+        for (i = 0; i < commandsList.size(); i++) {
+            cmd = commandsList.get(i);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
+                lock.wait();
+            }
+        }
+        commandsList.clear();
+
+        // Turn on projector
+        cmd = PrinterScriptFactory.generateProjectorCommand(true);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+        cmd = PrinterScriptFactory.generatePauseCommand(30);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+
+        // Get ready to exposure for base layer
+        commandsList = PrinterScriptFactory.generateCommandForExpoBase();
+        for (i = 0; i < commandsList.size(); i++) {
+            cmd = commandsList.get(i);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
+                lock.wait();
+            }
+        }
+        commandsList.clear();
+
+        // exposure base layer
+        panel.setBackground(Color.WHITE);
+        panel.repaint();
+        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.baseExpoTimeInSeconds);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+        Thread.sleep(300);
+        panel.setBackground(Color.BLACK);
+        panel.repaint();
+        cmd = PrinterScriptFactory.generatePauseCommand(5);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+
+        // loop layers
+        int layerSteps = printingInfo.getStepsPerLayer();
+        for (i = 0; i < total; i++) {
+            // Go up 3 layer height
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 3 * layerSteps);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
+                lock.wait();
+            }
+
+            // Go down 2 layer height
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 2 * layerSteps);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
+                lock.wait();
+            }
+
+            // Exposure layer
             element = children.get(i);
             publish(element);
-            synchronized (lock) {
+            cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.layerExpoTimeInSeconds);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
                 lock.wait();
             }
-            publish(circle);
 
-            synchronized (lock) {
+            publish(circle);
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
                 lock.wait();
             }
-//            Thread.sleep(300);
         }
+
+        // Turn off projector
+        cmd = PrinterScriptFactory.generateProjectorCommand(false);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+        cmd = PrinterScriptFactory.generatePauseCommand(30);
+        writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+
+        // Return to home again
+        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
+        for (i = 0; i < commandsList.size(); i++) {
+            cmd = commandsList.get(i);
+            writeToPort(serialPort, cmd.getCommand());
+            synchronized(lock) {
+                lock.wait();
+            }
+        }
+        commandsList.clear();
+
         return null;
     }
 
@@ -760,8 +858,6 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         if (isCancelled()) {
             return;
         }
-        System.out.println(trunks);
-        System.out.println(trunks.size());
         if (trunks.size() != 1) {
             return;
         }
@@ -775,11 +871,32 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         panel = null;
         root = null;
         try {
-            serialPort.removeEventListener();
+            if (serialPort != null) {
+                serialPort.removeEventListener();
+            }
         } catch (SerialPortException e) {
             e.printStackTrace();
         }
         serialPort = null;
+    }
+
+    private void writeToPort(SerialPort port, String data) {
+        if (port == null) return;
+        if (TextUtils.isEmpty(data)) {
+            System.err.println("No data to write");
+            return;
+        }
+        System.out.println("Data to serial: " + data);
+        writeToPort(port, data.getBytes());
+    }
+
+    private void writeToPort(SerialPort port, byte[] data) {
+        if (port == null) return;
+        try {
+            port.writeBytes(data);
+        } catch (SerialPortException ex) {
+            Utils.log(ex);
+        }
     }
 
     public void serialEvent(SerialPortEvent event) {
@@ -787,13 +904,16 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             if (event.getEventValue() > 0) {
                 try {
                     if (getState() == StateValue.STARTED) {
-                        synchronized (lock) {
-                            lock.notify();
+                        String feedback = serialPort.readString();
+                        if (feedback.endsWith(">")) {
+                            synchronized (lock) {
+                                lock.notify();
+                            }
                         }
+                        System.out.println(feedback);
                     }
-                    System.out.println(serialPort.readString());
                 } catch (SerialPortException ex) {
-                    System.out.println(ex);
+                    ex.printStackTrace();
                 }
             }
         } else if (event.isCTS()) { //If CTS line has changed state
@@ -816,9 +936,13 @@ class DynamicIconPanel extends JPanel {
     SVGDiagram diagram;
     SVGElement layerElement;
 
-    public DynamicIconPanel(int width, int height, String scale)
+    public DynamicIconPanel(int width, int height, int scale)
     {
-        StringReader reader = new StringReader(makeDynamicSVG(width, height, scale));
+        ensureDimensionValid(width, height);
+        ensureScaleValid(scale);
+
+        String attribScale = String.format("scale(%d)", scale);
+        StringReader reader = new StringReader(makeDynamicSVG(width, height, attribScale));
         uri = universe.loadSVG(reader, "myImage");
         diagram = universe.getDiagram(uri);
         icon = new SVGIcon();
@@ -827,6 +951,18 @@ class DynamicIconPanel extends JPanel {
 
         setBackground(Color.BLACK);
         setPreferredSize(new Dimension(width, height));
+    }
+
+    private void ensureDimensionValid(int width, int height) {
+        if (width < 0 || height < 0) {
+            throw new IllegalArgumentException("width and height must greater than 0");
+        }
+    }
+
+    private void ensureScaleValid(int scale) {
+        if (scale <= 0) {
+            throw new IllegalArgumentException("scale must be greater than 0");
+        }
     }
 
     public void paintComponent(Graphics g)
@@ -852,7 +988,9 @@ class DynamicIconPanel extends JPanel {
     }
 
     public void replaceLayerSVG(SVGElement element) {
-        resetLayers();
+        if (layerElement != null) {
+            resetLayers();
+        }
 
         if (element == null) {
             return;
@@ -892,26 +1030,54 @@ class DynamicIconPanel extends JPanel {
 }
 
 class PrintingInfo {
-    int baseExpoTimeInSeconds;
-    int layerExpoTimeInSeconds;
-    int layerHeightInMms;
-    int stepsPerMm;
-    int tankHorizontalDeg;
-    int tankResetDeg;
+    int baseExpoTimeInSeconds = -1;
+    int layerExpoTimeInSeconds = -1;
+    int layerHeightInMms = -1;
+    int stepsPerMm = -1;
+    int tankHorizontalDeg = -1;
+    int tankResetDeg = -1;
+
+    public boolean valid() {
+        return baseExpoTimeInSeconds > 0 && layerExpoTimeInSeconds > 0
+            && layerHeightInMms > 0 && stepsPerMm > 0
+            && tankResetDeg > 0;
+    }
+
+    public int getStepsPerLayer() {
+        return layerHeightInMms * stepsPerMm;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("BaseExpoTime: ").append(baseExpoTimeInSeconds).append(", ");
+        sb.append("LayerExpoTime: ").append(layerExpoTimeInSeconds).append(", ");
+        sb.append("LayerHeight(mm): ").append(layerHeightInMms).append(", ");
+        sb.append("Steps/mm: ").append(stepsPerMm).append(", ");
+        sb.append("TankHoriDeg: ").append(tankHorizontalDeg).append(", ");
+        sb.append("TankResetDeg: ").append(tankResetDeg);
+        return sb.toString();
+    }
 }
 
-interface PrinterExecutable {
-    public String getCommand();
+abstract class CommandBase {
+    public abstract String getCommand();
+    protected abstract String getCommandCode();
+
+    @Override
+    public String toString() {
+        return getCommand();
+    }
 }
 
-class PlatformMovement implements PrinterExecutable {
+class PlatformMovement extends CommandBase {
     public static final int DIRECTION_UP    = 0;
     public static final int DIRECTION_DOWN  = 1;
 
-    private static final String CODE_DIR_UP     = "2";
-    private static final String CODE_DIR_DOWN   = "3";
+    private static final String CODE_DIR_UP     = "02";
+    private static final String CODE_DIR_DOWN   = "03";
 
-    private static final String PLATFORM_MOVEMENT_PATTERN = "G%2d Z%d;";
+    private static final String PLATFORM_MOVEMENT_PATTERN = "G%s Z%d;";
     final int direction;
     final int steps;
 
@@ -922,10 +1088,11 @@ class PlatformMovement implements PrinterExecutable {
 
     @Override
     public String getCommand() {
-        return String.format(PLATFORM_MOVEMENT_PATTERN, getDirectionCode(), steps);
+        return String.format(PLATFORM_MOVEMENT_PATTERN, getCommandCode(), steps);
     }
 
-    private String getDirectionCode() {
+    @Override
+    protected String getCommandCode() {
         switch (direction) {
             case DIRECTION_DOWN:
                 return CODE_DIR_DOWN;
@@ -937,28 +1104,35 @@ class PlatformMovement implements PrinterExecutable {
     }
 }
 
-class PauseCommand implements PrinterExecutable {
-    private static final String PAUSE_COMMAND_PATTERN = "G04 P%d;";
+class PauseCommand extends CommandBase {
+    private static final String PAUSE_COMMAND_PATTERN = "G%s P%d;";
+
+    private static final String CODE_PAUSE = "04";
     final int pauseTimeInSeconds;
 
-    public PauseCommand(int _time) {
-        pauseTimeInSeconds = _time;
+    public PauseCommand(int _seconds) {
+        pauseTimeInSeconds = _seconds;
     }
 
     @Override
     public String getCommand() {
-        return String.format(PAUSE_COMMAND_PATTERN, pauseTimeInSeconds);
+        return String.format(PAUSE_COMMAND_PATTERN, getCommandCode(), pauseTimeInSeconds);
+    }
+
+    @Override
+    protected String getCommandCode() {
+        return CODE_PAUSE;
     }
 }
 
-class TankMovement implements PrinterExecutable {
+class TankMovement extends CommandBase {
     public static final int DIRECTION_UP    = 0;
     public static final int DIRECTION_DOWN  = 1;
 
-    private static final String CODE_DIR_UP     = "2";
-    private static final String CODE_DIR_DOWN   = "3";
+    private static final String CODE_DIR_UP     = "02";
+    private static final String CODE_DIR_DOWN   = "03";
 
-    private static final String TANK_COMMAND_PATTERN = "M%2d Z%d;";
+    private static final String TANK_COMMAND_PATTERN = "M%s Z%d;";
     final int direction;
     final int steps;
 
@@ -969,10 +1143,11 @@ class TankMovement implements PrinterExecutable {
 
     @Override
     public String getCommand() {
-        return String.format(TANK_COMMAND_PATTERN, getDirectionCode(), steps);
+        return String.format(TANK_COMMAND_PATTERN, getCommandCode(), steps);
     }
 
-    private String getDirectionCode() {
+    @Override
+    protected String getCommandCode() {
         switch (direction) {
             case DIRECTION_DOWN:
                 return CODE_DIR_DOWN;
@@ -984,9 +1159,11 @@ class TankMovement implements PrinterExecutable {
     }
 }
 
-class ProjectorCommand implements PrinterExecutable {
-    private static final String PROJECTOR_ON_PATTERN    = "G50";
-    private static final String PROJECTOR_OFF_PATTERN   = "G51";
+class ProjectorCommand extends CommandBase {
+    private static final String PROJECTOR_PATTERN    = "G%s;";
+
+    private static final String CODE_ON     = "50";
+    private static final String CODE_OFF    = "51";
 
     private final boolean makeOn;
 
@@ -996,7 +1173,12 @@ class ProjectorCommand implements PrinterExecutable {
 
     @Override
     public String getCommand() {
-        return makeOn ? PROJECTOR_ON_PATTERN : PROJECTOR_OFF_PATTERN;
+        return String.format(PROJECTOR_PATTERN, getCommandCode());
+    }
+
+    @Override
+    protected String getCommandCode() {
+        return makeOn ? CODE_ON : CODE_OFF;
     }
 }
 
@@ -1013,29 +1195,84 @@ class ProjectorCommand implements PrinterExecutable {
  */
 class PrinterScriptFactory {
     public static final int PAUSE_TIME_DEFAULT = 1; // 1 second
+    public static final int RESET_COMMAND_SIZE = 20;
 
-    public static List<PrinterExecutable> generateCommandForResetPlatform() {
-        ArrayList<PrinterExecutable> homeCommandsList = new ArrayList<PrinterExecutable>();
-        for (int i = 0; i < 10; i++) {
-            homeCommandsList.add(generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000));
-            homeCommandsList.add(generatePauseCommand(PAUSE_TIME_DEFAULT));
+    public static List<CommandBase> generateCommandForResetPlatform() {
+        CommandBase cmd;
+        ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
+        for (int i = 0; i < RESET_COMMAND_SIZE; i++) {
+            cmd = generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
+            if (cmd != null) {
+                commandsList.add(cmd);
+            }
         }
-        return homeCommandsList;
+        if (commandsList.size() != RESET_COMMAND_SIZE) {
+            System.err.println("Unexpected command with null when preparing reset command list");
+            throw new IllegalStateException("Unexpected command with null when preparing reset command list");
+        }
+        return commandsList;
     }
 
-    public static PrinterExecutable generatePlatformMovement(int dir, int steps) {
-        return new PlatformMovement(dir, steps);
+    public static List<CommandBase> generateCommandForExpoBase() {
+        CommandBase cmd;
+        ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
+        for (int i = 0; i < RESET_COMMAND_SIZE; i++) {
+            cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
+            if (cmd != null) {
+                commandsList.add(cmd);
+            }
+        }
+        if (commandsList.size() != RESET_COMMAND_SIZE) {
+            System.err.println("Unexpected command with null when preparing exposure base command list");
+            throw new IllegalStateException("Unexpected command with null when preparing exposure base command list");
+        }
+        return commandsList;
     }
 
-    public static PrinterExecutable generatePauseCommand(int time) {
-        return new PauseCommand(time);
+    public static CommandBase generatePlatformMovement(int dir, int steps) {
+        CommandBase cmd = new PlatformMovement(dir, steps);
+        if (validateCommand(cmd)) {
+            return cmd;
+        } else {
+            return null;
+        }
     }
 
-    public static PrinterExecutable generateTankMovement(int dir, int steps) {
-        return new TankMovement(dir, steps);
+    public static CommandBase generatePauseCommand(int seconds) {
+        CommandBase cmd = new PauseCommand(seconds);
+        if (validateCommand(cmd)) {
+            return cmd;
+        } else {
+            return null;
+        }
     }
 
-    public static PrinterExecutable generateProjectorCommand(boolean toOn) {
-        return new ProjectorCommand(toOn);
+    public static CommandBase generateTankMovement(int dir, int steps) {
+        CommandBase cmd = new TankMovement(dir, steps);
+        if (validateCommand(cmd)) {
+            return cmd;
+        } else {
+            return null;
+        }
+    }
+
+    public static CommandBase generateProjectorCommand(boolean toOn) {
+        CommandBase cmd = new ProjectorCommand(toOn);
+        if (validateCommand(cmd)) {
+            return cmd;
+        } else {
+            return null;
+        }
+    }
+
+    public static boolean validateCommand(CommandBase cmd) {
+        if (cmd == null) return false;
+        String strCmd = cmd.getCommand();
+        if (TextUtils.isEmpty(strCmd)) return false;
+        if (!strCmd.endsWith(";")) {
+            System.err.println("Command not ends with \";\": " + cmd.getClass().getSimpleName());
+            return false;
+        }
+        return true;
     }
 }
