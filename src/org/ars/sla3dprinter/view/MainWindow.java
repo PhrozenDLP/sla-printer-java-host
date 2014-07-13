@@ -93,6 +93,10 @@ public class MainWindow implements ActionListener {
     private JButton mBtnPortRefresh;
     private JComboBox mComboBauds;
 
+    // UI components for Platform Motor
+    private JButton mBtnPlatformUp;
+    private JButton mBtnPlatformDown;
+
     // UI components for VGA display
     private JPanel mVgaOutputPane;
     private JComboBox mComboVGA;
@@ -119,8 +123,14 @@ public class MainWindow implements ActionListener {
     private NumberFormatter mIntegerInputFormat = new NumberFormatter(
                     new DecimalFormat());
 
+    SVGUniverse mSVGUniverse = SVGCache.getSVGUniverse();
+    SVGDiagram mSelectedSVGDiagram;
+    SVGRoot mSelectedSVGRoot;
+
     // FileChooser
     final JFileChooser mFileChooser;
+    private JButton mBtnProjectorOn;
+    private JButton mBtnProjectorOff;
     {
         JFileChooser fc = new JFileChooser();
         try
@@ -256,6 +266,20 @@ public class MainWindow implements ActionListener {
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(130, 100, 80, 30);
         mStepMotorPane.add(mInputLayerExpo);
+
+        mBtnPlatformUp = new JButton("Up");
+        mBtnPlatformUp.setBounds(274, 23, 70, 29);
+        mBtnPlatformUp.setActionCommand(UIAction.PLATFORM_UP.name());
+        mBtnPlatformUp.setEnabled(false);
+        mBtnPlatformUp.addActionListener(this);
+        mStepMotorPane.add(mBtnPlatformUp);
+
+        mBtnPlatformDown = new JButton("Down");
+        mBtnPlatformDown.setBounds(274, 61, 70, 29);
+        mBtnPlatformDown.setActionCommand(UIAction.PLATFORM_DOWN.name());
+        mBtnPlatformDown.setEnabled(false);
+        mBtnPlatformDown.addActionListener(this);
+        mStepMotorPane.add(mBtnPlatformDown);
     }
 
     private void initTankMotorPanel() {
@@ -358,7 +382,7 @@ public class MainWindow implements ActionListener {
         mVgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Projector connection",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mVgaOutputPane.setBounds(6, 150, 350, 60);
+        mVgaOutputPane.setBounds(6, 150, 350, 96);
         mFrmSla3dPrinter.getContentPane().add(mVgaOutputPane);
         mVgaOutputPane.setLayout(null);
 
@@ -379,6 +403,20 @@ public class MainWindow implements ActionListener {
         mBtnVGARefresh.setActionCommand(UIAction.REFRESH_VGA.name());
         mBtnVGARefresh.addActionListener(this);
         mVgaOutputPane.add(mBtnVGARefresh);
+
+        mBtnProjectorOn = new JButton("On");
+        mBtnProjectorOn.setBounds(178, 62, 55, 29);
+        mBtnProjectorOn.setActionCommand(UIAction.PROJECTOR_ON.name());
+        mBtnProjectorOn.setEnabled(false);
+        mBtnProjectorOn.addActionListener(this);
+        mVgaOutputPane.add(mBtnProjectorOn);
+
+        mBtnProjectorOff = new JButton("Off");
+        mBtnProjectorOff.setBounds(232, 62, 63, 29);
+        mBtnProjectorOff.setActionCommand(UIAction.PROJECTOR_OFF.name());
+        mBtnProjectorOff.setEnabled(false);
+        mBtnProjectorOff.addActionListener(this);
+        mVgaOutputPane.add(mBtnProjectorOff);
     }
 
     // Init Input project panes
@@ -420,7 +458,7 @@ public class MainWindow implements ActionListener {
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Misc",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mMiscPane.setBounds(6, 220, 350, 200);
+        mMiscPane.setBounds(6, 258, 350, 162);
 
         JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
         lblBaseExposure.setFont(mUIFont);
@@ -479,6 +517,8 @@ public class MainWindow implements ActionListener {
         if (Utils.isTextEmpty(action)) return;
         if (source == null) return;
 
+        CommandBase cmd;
+
         switch (UIAction.valueOf(action)) {
             case COM_PORT_CHANGE:
                 JComboBox comboBox = (JComboBox) source;
@@ -499,6 +539,10 @@ public class MainWindow implements ActionListener {
                     mBtnPortOpen.setEnabled(false);
                     mComboPorts.setEnabled(false);
                     mBtnPortClose.setEnabled(true);
+                    mBtnPlatformUp.setEnabled(true);
+                    mBtnPlatformDown.setEnabled(true);
+                    mBtnProjectorOn.setEnabled(true);
+                    mBtnProjectorOff.setEnabled(true);
                 }
                 break;
             case CLOSE_PORT:
@@ -506,6 +550,10 @@ public class MainWindow implements ActionListener {
                     mBtnPortOpen.setEnabled(true);
                     mComboPorts.setEnabled(true);
                     mBtnPortClose.setEnabled(false);
+                    mBtnPlatformUp.setEnabled(false);
+                    mBtnPlatformDown.setEnabled(false);
+                    mBtnProjectorOn.setEnabled(false);
+                    mBtnProjectorOff.setEnabled(false);
                     mSerialPort = null;
                 }
                 break;
@@ -520,6 +568,48 @@ public class MainWindow implements ActionListener {
                 break;
             case START_PRINT:
                 promptFakeFrame();
+                break;
+            case PLATFORM_UP:
+                if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
+                  return;
+                }
+                try {
+                    int steps = Integer.parseInt(mInputLayerHeight.getText())
+                            * Integer.parseInt(mInputMm2Steps.getText());
+                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP
+                                    , steps);
+                    SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
+                } catch (NumberFormatException nfe) {
+                    System.err.println("Invalid number for layer height and stpes");
+                }
+                break;
+            case PLATFORM_DOWN:
+                if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
+                    return;
+                }
+                try {
+                    int steps = Integer.parseInt(mInputLayerHeight.getText())
+                            * Integer.parseInt(mInputMm2Steps.getText());
+                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN
+                                    , steps);
+                    SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
+                } catch (NumberFormatException nfe) {
+                    System.err.println("Invalid number for layer height and stpes");
+                }
+                break;
+            case PROJECTOR_ON:
+                if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
+                    return;
+                }
+                cmd = PrinterScriptFactory.generateProjectorCommand(true);
+                SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
+                break;
+            case PROJECTOR_OFF:
+                if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
+                    return;
+                }
+                cmd = PrinterScriptFactory.generateProjectorCommand(false);
+                SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 break;
             default:
                 Utils.log("Unknown action: " + action);
@@ -549,10 +639,6 @@ public class MainWindow implements ActionListener {
             System.out.println("No Selection ");
         }
     }
-
-    SVGUniverse mSVGUniverse = SVGCache.getSVGUniverse();
-    SVGDiagram mSelectedSVGDiagram;
-    SVGRoot mSelectedSVGRoot;
 
     private void promptFakeFrame() {
         if (mSelectedProject == null) {
@@ -648,7 +734,7 @@ public class MainWindow implements ActionListener {
         if (Utils.isMac()) {
             Utils.enableFullScreenMode(f);
         }
-//        device.setFullScreenWindow(f);
+        device.setFullScreenWindow(f);
 
         // Kick-off worker
         worker.execute();

@@ -12,7 +12,11 @@ public class Consts {
         REFRESH_PORT,
         REFRESH_VGA,
         OPEN_PROJECT,
-        START_PRINT
+        START_PRINT,
+        PLATFORM_UP,
+        PLATFORM_DOWN,
+        PROJECTOR_ON,
+        PROJECTOR_OFF
     }
 
     // Comm Bauds
