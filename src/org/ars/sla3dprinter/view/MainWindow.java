@@ -54,6 +54,7 @@ import jssc.SerialPortList;
 
 import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Consts.UIAction;
+import org.ars.sla3dprinter.util.SerialUtils;
 import org.ars.sla3dprinter.util.TextUtils;
 import org.ars.sla3dprinter.util.Utils;
 
@@ -198,7 +199,7 @@ public class MainWindow implements ActionListener {
             @Override
             public void windowClosing(WindowEvent we) {
                 if (mSerialPort != null) {
-                    closePort(mSerialPort);
+                    SerialUtils.closePort(mSerialPort);
                 }
                 System.exit(0);
             }
@@ -493,15 +494,15 @@ public class MainWindow implements ActionListener {
                     Utils.log("No selected comm port");
                     return;
                 }
-                mSerialPort = openPort(mSelectedPort);
-                if (isPortAvailable(mSerialPort)) {
+                mSerialPort = SerialUtils.openPort(mSelectedPort);
+                if (SerialUtils.isPortAvailable(mSerialPort)) {
                     mBtnPortOpen.setEnabled(false);
                     mComboPorts.setEnabled(false);
                     mBtnPortClose.setEnabled(true);
                 }
                 break;
             case CLOSE_PORT:
-                if (closePort(mSerialPort)) {
+                if (SerialUtils.closePort(mSerialPort)) {
                     mBtnPortOpen.setEnabled(true);
                     mComboPorts.setEnabled(true);
                     mBtnPortClose.setEnabled(false);
@@ -657,41 +658,6 @@ public class MainWindow implements ActionListener {
         JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error",
                 JOptionPane.ERROR_MESSAGE);
     }
-
-    private SerialPort openPort(String portName) {
-        try {
-            SerialPort serialPort = new SerialPort(mSelectedPort);
-            // Open serial port
-            serialPort.openPort();
-            // Set params. Also you can set params by this string:
-            // serialPort.setParams(9600, 8, 1, 0);
-            serialPort.setParams(SerialPort.BAUDRATE_9600,
-                    SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-                    SerialPort.PARITY_NONE);
-
-            int mask = SerialPort.MASK_RXCHAR + SerialPort.MASK_CTS + SerialPort.MASK_DSR;//Prepare mask
-            serialPort.setEventsMask(mask);//Set mask
-            return serialPort;
-        } catch (SerialPortException ex) {
-            Utils.log(ex);
-            return null;
-        }
-    }
-
-    private boolean closePort(SerialPort port) {
-        if (port == null || !port.isOpened()) return true;
-        try {
-            return port.closePort();
-        } catch (SerialPortException ex) {
-            Utils.log(ex);
-            return false;
-        }
-    }
-
-    private boolean isPortAvailable(SerialPort port) {
-        return port != null && port.isOpened();
-    }
-
 }
 
 class ProjectWorker extends SwingWorker<Void, SVGElement>
@@ -746,7 +712,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
@@ -755,12 +721,12 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         // Turn on projector
         cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
         cmd = PrinterScriptFactory.generatePauseCommand(30);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
@@ -769,7 +735,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList = PrinterScriptFactory.generateCommandForExpoBase();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
@@ -780,7 +746,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         panel.setBackground(Color.WHITE);
         panel.repaint();
         cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.baseExpoTimeInSeconds);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
@@ -788,7 +754,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         panel.setBackground(Color.BLACK);
         panel.repaint();
         cmd = PrinterScriptFactory.generatePauseCommand(5);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
@@ -798,14 +764,14 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         for (i = 0; i < total; i++) {
             // Go up 3 layer height
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 3 * layerSteps);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
 
             // Go down 2 layer height
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 2 * layerSteps);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
@@ -814,14 +780,14 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             element = children.get(i);
             publish(element);
             cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.layerExpoTimeInSeconds);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
 
             publish(circle);
             cmd = PrinterScriptFactory.generatePauseCommand(2);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
@@ -829,12 +795,12 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         // Turn off projector
         cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
         cmd = PrinterScriptFactory.generatePauseCommand(30);
-        writeToPort(serialPort, cmd.getCommand());
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
             lock.wait();
         }
@@ -843,7 +809,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            writeToPort(serialPort, cmd.getCommand());
+            SerialUtils.writeToPort(serialPort, cmd.getCommand());
             synchronized(lock) {
                 lock.wait();
             }
@@ -878,25 +844,6 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             e.printStackTrace();
         }
         serialPort = null;
-    }
-
-    private void writeToPort(SerialPort port, String data) {
-        if (port == null) return;
-        if (TextUtils.isEmpty(data)) {
-            System.err.println("No data to write");
-            return;
-        }
-        System.out.println("Data to serial: " + data);
-        writeToPort(port, data.getBytes());
-    }
-
-    private void writeToPort(SerialPort port, byte[] data) {
-        if (port == null) return;
-        try {
-            port.writeBytes(data);
-        } catch (SerialPortException ex) {
-            Utils.log(ex);
-        }
     }
 
     public void serialEvent(SerialPortEvent event) {
