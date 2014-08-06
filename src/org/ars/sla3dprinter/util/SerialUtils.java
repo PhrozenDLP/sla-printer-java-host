@@ -46,10 +46,12 @@ public class SerialUtils {
             return;
         }
         System.out.println("Data to serial: " + data);
-        writeToPort(port, data.getBytes());
+        if (port != null) {
+            writeToPort(port, data.getBytes());
+        }
     }
 
-    public static void writeToPort(SerialPort port, byte[] data) {
+    private static void writeToPort(SerialPort port, byte[] data) {
         if (port == null) return;
         try {
             port.writeBytes(data);

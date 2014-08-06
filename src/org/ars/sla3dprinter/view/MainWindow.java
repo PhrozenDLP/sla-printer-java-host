@@ -29,16 +29,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.border.EtchedBorder;
@@ -107,8 +110,6 @@ public class MainWindow implements ActionListener {
     private JTextField mInputMm2Steps;
     private JTextField mInputLayerHeight;
     private JTextField mInputLayerExpo;
-    private JTextField mInputTankHDeg;
-    private JTextField mInputTankRestAng;
 
     // UI components for target project
     private JPanel mProjectPane;
@@ -116,6 +117,11 @@ public class MainWindow implements ActionListener {
     private JButton mBtnOpenProject;
     private JButton mBtnPrint;
     private JLabel mLblEstimated;
+
+    private JButton mBtnProjectorOn;
+    private JButton mBtnProjectorOff;
+    private JTextField mInputScale;
+    private JTextField mInputUpLiftSteps;
 
     // Resource part for images
     private Font mUIFont = new Font("Monaco", Font.PLAIN, 14);
@@ -129,8 +135,7 @@ public class MainWindow implements ActionListener {
 
     // FileChooser
     final JFileChooser mFileChooser;
-    private JButton mBtnProjectorOn;
-    private JButton mBtnProjectorOff;
+
     {
         JFileChooser fc = new JFileChooser();
         try
@@ -230,7 +235,7 @@ public class MainWindow implements ActionListener {
         mStepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Platform motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mStepMotorPane.setBounds(368, 6, 350, 150);
+        mStepMotorPane.setBounds(368, 6, 350, 200);
         mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
         mStepMotorPane.setLayout(null);
 
@@ -280,40 +285,20 @@ public class MainWindow implements ActionListener {
         mBtnPlatformDown.setEnabled(false);
         mBtnPlatformDown.addActionListener(this);
         mStepMotorPane.add(mBtnPlatformDown);
+        
+        JLabel label = new JLabel("Up lift steps:");
+        label.setFont(new Font("Monaco", Font.PLAIN, 14));
+        label.setBounds(10, 147, 120, 30);
+        mStepMotorPane.add(label);
+
+        mInputUpLiftSteps = new JTextField(Consts.PULL_UP_STEPS);
+        mInputUpLiftSteps.setFont(new Font("Monaco", Font.PLAIN, 14));
+        mInputUpLiftSteps.setColumns(10);
+        mInputUpLiftSteps.setBounds(130, 148, 80, 30);
+        mStepMotorPane.add(mInputUpLiftSteps);
     }
 
     private void initTankMotorPanel() {
-        JPanel mServoMotorPane = new JPanel();
-        mServoMotorPane.setLayout(null);
-        mServoMotorPane.setToolTipText("");
-        mServoMotorPane.setForeground(Color.BLUE);
-        mServoMotorPane.setBorder(new TitledBorder(new EtchedBorder(
-                EtchedBorder.LOWERED, null, null), "Tank motor control",
-                TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mServoMotorPane.setBounds(368, 168, 350, 150);
-        mFrmSla3dPrinter.getContentPane().add(mServoMotorPane);
-
-        JLabel lblHorizontalDeg = new JLabel("Horizontal deg:");
-        lblHorizontalDeg.setFont(mUIFont);
-        lblHorizontalDeg.setBounds(10, 20, 120, 30);
-        mServoMotorPane.add(lblHorizontalDeg);
-
-        JLabel lblTankResetAngle = new JLabel("Tank reset deg:");
-        lblTankResetAngle.setFont(mUIFont);
-        lblTankResetAngle.setBounds(10, 60, 120, 30);
-        mServoMotorPane.add(lblTankResetAngle);
-
-        mInputTankHDeg = new JTextField("0");
-        mInputTankHDeg.setFont(mUIFont);
-        mInputTankHDeg.setColumns(10);
-        mInputTankHDeg.setBounds(140, 20, 80, 30);
-        mServoMotorPane.add(mInputTankHDeg);
-
-        mInputTankRestAng = new JTextField("10");
-        mInputTankRestAng.setFont(mUIFont);
-        mInputTankRestAng.setColumns(10);
-        mInputTankRestAng.setBounds(140, 60, 80, 30);
-        mServoMotorPane.add(mInputTankRestAng);
     }
 
     // COM port pane
@@ -426,7 +411,7 @@ public class MainWindow implements ActionListener {
         mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mProjectPane.setBounds(368, 330, 350, 100);
+        mProjectPane.setBounds(368, 320, 350, 100);
         mFrmSla3dPrinter.getContentPane().add(mProjectPane);
         mProjectPane.setLayout(null);
 
@@ -462,26 +447,37 @@ public class MainWindow implements ActionListener {
 
         JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
         lblBaseExposure.setFont(mUIFont);
-        lblBaseExposure.setBounds(10, 20, 160, 30);
+        lblBaseExposure.setBounds(6, 59, 160, 30);
         mMiscPane.add(lblBaseExposure);
 
         JLabel lblEstimate = new JLabel("Estimate time:");
         lblEstimate.setFont(mUIFont);
-        lblEstimate.setBounds(10, 60, 120, 30);
+        lblEstimate.setBounds(6, 99, 120, 30);
         mMiscPane.add(lblEstimate);
 
         mLblEstimated = new JLabel("0s");
         mLblEstimated.setFont(mUIFont);
-        mLblEstimated.setBounds(130, 60, 150, 30);
+        mLblEstimated.setBounds(126, 99, 150, 30);
         mMiscPane.add(mLblEstimated);
 
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
 
         mInputBaseExpo = new JTextField("30");
         mInputBaseExpo.setFont(mUIFont);
-        mInputBaseExpo.setBounds(175, 20, 80, 30);
+        mInputBaseExpo.setBounds(171, 59, 80, 30);
         mMiscPane.add(mInputBaseExpo);
         mInputBaseExpo.setColumns(10);
+        
+        JLabel label = new JLabel("ImageScale");
+        label.setFont(new Font("Monaco", Font.PLAIN, 14));
+        label.setBounds(6, 21, 160, 30);
+        mMiscPane.add(label);
+
+        mInputScale = new JTextField("10");
+        mInputScale.setFont(new Font("Monaco", Font.PLAIN, 14));
+        mInputScale.setColumns(10);
+        mInputScale.setBounds(171, 22, 80, 30);
+        mMiscPane.add(mInputScale);
     }
 
     private void loadCommPorts() {
@@ -656,8 +652,7 @@ public class MainWindow implements ActionListener {
         info.layerExpoTimeInSeconds = Integer.parseInt(mInputLayerExpo.getText());
         info.layerHeightInMms = Integer.parseInt(mInputLayerHeight.getText());
         info.stepsPerMm = Integer.parseInt(mInputMm2Steps.getText());
-        info.tankHorizontalDeg = Integer.parseInt(mInputTankHDeg.getText());
-        info.tankResetDeg = Integer.parseInt(mInputTankRestAng.getText());
+        info.upLiftSteps = Integer.parseInt(mInputUpLiftSteps.getText());
 
         // 2. Prepare GraphicsDevice
         Object selected = mComboVGA.getSelectedItem();
@@ -701,31 +696,30 @@ public class MainWindow implements ActionListener {
         int targetWidth = device.getDisplayMode().getWidth();
         float scaleW = targetWidth / width.getFloatValue();
         int targetHeight = Math.round(height.getFloatValue() * scaleW);
+        targetHeight = device.getDisplayMode().getHeight();
 
-        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, Math.round(scaleW));
+        // Force not scale
+        int scale = Integer.parseInt(mInputScale.getText());
+        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, Math.round(scale));
         // Load target SVG file for the 3d model
         worker = new ProjectWorker(myPanel, root, mSerialPort, info);
 
-        f.getContentPane().add(myPanel);
-        f.addKeyListener(new KeyListener() {
+        myPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "escapeFromPrinting");
+        myPanel.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "escapeFromPrinting");
+        myPanel.getInputMap(JComponent.WHEN_FOCUSED)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "escapeFromPrinting");
+        myPanel.getActionMap().put("escapeFromPrinting", new AbstractAction() {
             @Override
-            public void keyTyped(KeyEvent event) {}
-
-            @Override
-            public void keyReleased(KeyEvent event) {
-                switch (event.getKeyCode()) {
-                    case KeyEvent.VK_ESCAPE:
-                        f.dispose();
-                        if (worker != null) {
-                            worker.cancel(true);
-                        }
-                        f.removeKeyListener(this);
+            public void actionPerformed(ActionEvent e) {
+                f.dispose();
+                if (worker != null) {
+                    worker.cancel(true);
                 }
             }
-
-            @Override
-            public void keyPressed(KeyEvent event) {}
         });
+        f.getContentPane().add(myPanel);
         f.setUndecorated(true);
         f.setExtendedState(JFrame.MAXIMIZED_BOTH);
         f.pack();
@@ -806,6 +800,19 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList.clear();
 
         // Turn on projector
+        panel.setBackground(Color.BLACK);
+        panel.repaint();
+
+        cmd = PrinterScriptFactory.generateProjectorCommand(true);
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+        cmd = PrinterScriptFactory.generatePauseCommand(30);
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
         cmd = PrinterScriptFactory.generateProjectorCommand(true);
         SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
@@ -836,7 +843,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         synchronized(lock) {
             lock.wait();
         }
-        Thread.sleep(300);
+//        Thread.sleep(300);
         panel.setBackground(Color.BLACK);
         panel.repaint();
         cmd = PrinterScriptFactory.generatePauseCommand(5);
@@ -847,17 +854,24 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         // loop layers
         int layerSteps = printingInfo.getStepsPerLayer();
+
+        int upSteps = printingInfo.upLiftSteps;
+        int downSteps = upSteps - layerSteps;
         for (i = 0; i < total; i++) {
             // Go up 3 layer height
-            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 3 * layerSteps);
+//            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 3 * layerSteps);
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
             SerialUtils.writeToPort(serialPort, cmd.getCommand());
+//            Thread.sleep(300);
             synchronized(lock) {
                 lock.wait();
             }
 
             // Go down 2 layer height
-            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 2 * layerSteps);
+//            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 2 * layerSteps);
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
             SerialUtils.writeToPort(serialPort, cmd.getCommand());
+//            Thread.sleep(300);
             synchronized(lock) {
                 lock.wait();
             }
@@ -867,6 +881,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             publish(element);
             cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.layerExpoTimeInSeconds);
             SerialUtils.writeToPort(serialPort, cmd.getCommand());
+//            Thread.sleep(300);
             synchronized(lock) {
                 lock.wait();
             }
@@ -874,12 +889,23 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             publish(circle);
             cmd = PrinterScriptFactory.generatePauseCommand(2);
             SerialUtils.writeToPort(serialPort, cmd.getCommand());
+//            Thread.sleep(300);
             synchronized(lock) {
                 lock.wait();
             }
         }
 
         // Turn off projector
+        cmd = PrinterScriptFactory.generateProjectorCommand(false);
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
+        cmd = PrinterScriptFactory.generatePauseCommand(1);
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
+        synchronized(lock) {
+            lock.wait();
+        }
         cmd = PrinterScriptFactory.generateProjectorCommand(false);
         SerialUtils.writeToPort(serialPort, cmd.getCommand());
         synchronized(lock) {
@@ -1000,13 +1026,14 @@ class DynamicIconPanel extends JPanel {
 
     public void paintComponent(Graphics g)
     {
+        super.paintComponent(g);
         final int width = getWidth();
         final int height = getHeight();
 
         g.setColor(getBackground());
         g.fillRect(0, 0, width, height);
 
-        icon.paintIcon(this, g, 0, 0);
+        icon.paintIcon(this, g, width / 2, height / 2);
     }
 
     private String makeDynamicSVG(int width, int height, String scale)
@@ -1063,17 +1090,15 @@ class DynamicIconPanel extends JPanel {
 }
 
 class PrintingInfo {
+    int upLiftSteps;
     int baseExpoTimeInSeconds = -1;
     int layerExpoTimeInSeconds = -1;
     int layerHeightInMms = -1;
     int stepsPerMm = -1;
-    int tankHorizontalDeg = -1;
-    int tankResetDeg = -1;
 
     public boolean valid() {
         return baseExpoTimeInSeconds > 0 && layerExpoTimeInSeconds > 0
-            && layerHeightInMms > 0 && stepsPerMm > 0
-            && tankResetDeg > 0;
+            && layerHeightInMms > 0 && stepsPerMm > 0;
     }
 
     public int getStepsPerLayer() {
@@ -1087,8 +1112,7 @@ class PrintingInfo {
         sb.append("LayerExpoTime: ").append(layerExpoTimeInSeconds).append(", ");
         sb.append("LayerHeight(mm): ").append(layerHeightInMms).append(", ");
         sb.append("Steps/mm: ").append(stepsPerMm).append(", ");
-        sb.append("TankHoriDeg: ").append(tankHorizontalDeg).append(", ");
-        sb.append("TankResetDeg: ").append(tankResetDeg);
+        sb.append("Up Lift Steps: ").append(upLiftSteps);
         return sb.toString();
     }
 }
@@ -1228,8 +1252,10 @@ class ProjectorCommand extends CommandBase {
  */
 class PrinterScriptFactory {
     public static final int PAUSE_TIME_DEFAULT = 1; // 1 second
-    public static final int RESET_COMMAND_SIZE = 20;
-
+    public static final int RESET_COMMAND_SIZE = 10;
+//.0025  10 mm / 4000 steps
+// 195 mm
+// 19.5
     public static List<CommandBase> generateCommandForResetPlatform() {
         CommandBase cmd;
         ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
@@ -1249,11 +1275,15 @@ class PrinterScriptFactory {
     public static List<CommandBase> generateCommandForExpoBase() {
         CommandBase cmd;
         ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
-        for (int i = 0; i < RESET_COMMAND_SIZE; i++) {
+        for (int i = 1; i < RESET_COMMAND_SIZE; i++) {
             cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
             if (cmd != null) {
                 commandsList.add(cmd);
             }
+        }
+        cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 3980);
+        if (cmd != null) {
+            commandsList.add(cmd);
         }
         if (commandsList.size() != RESET_COMMAND_SIZE) {
             System.err.println("Unexpected command with null when preparing exposure base command list");

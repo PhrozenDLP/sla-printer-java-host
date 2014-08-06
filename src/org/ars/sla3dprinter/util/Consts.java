@@ -27,4 +27,6 @@ public class Consts {
     public static final String COMM_BAND_38400  = "38400";
     public static final String COMM_BAND_57600  = "57600";
     public static final String COMM_BAND_115200 = "115200";
+
+    public static final int PULL_UP_STEPS = 2000;
 }
