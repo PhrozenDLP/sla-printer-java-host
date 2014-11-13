@@ -2,6 +2,8 @@ package org.ars.sla3dprinter.util;
 
 public class Consts {
 
+    public static boolean sFLAG_DEBUG_MODE = false;
+
     // Actions
     public enum UIAction {
         COM_PORT_CHANGE,

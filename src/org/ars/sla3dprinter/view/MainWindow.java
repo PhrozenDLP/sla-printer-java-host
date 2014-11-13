@@ -11,7 +11,6 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -201,7 +200,6 @@ public class MainWindow implements ActionListener {
     private void initViews() {
         initWindowFrame();
         initPlatformMotorPanel();
-        initTankMotorPanel();
         initComPortPanel();
         initVGAOutputPanel();
         initInputProjectPanel();
@@ -291,14 +289,11 @@ public class MainWindow implements ActionListener {
         label.setBounds(10, 147, 120, 30);
         mStepMotorPane.add(label);
 
-        mInputUpLiftSteps = new JTextField(Consts.PULL_UP_STEPS);
+        mInputUpLiftSteps = new JTextField(Integer.toString(Consts.PULL_UP_STEPS));
         mInputUpLiftSteps.setFont(new Font("Monaco", Font.PLAIN, 14));
         mInputUpLiftSteps.setColumns(10);
         mInputUpLiftSteps.setBounds(130, 148, 80, 30);
         mStepMotorPane.add(mInputUpLiftSteps);
-    }
-
-    private void initTankMotorPanel() {
     }
 
     // COM port pane
@@ -641,7 +636,7 @@ public class MainWindow implements ActionListener {
             showErrorDialog("Choose a SVG by \'Open Project\'");
             return;
         }
-        if (mSelectedPort == null) {
+        if (!Consts.sFLAG_DEBUG_MODE && mSelectedPort == null) {
             showErrorDialog("Connect to printer before start printing");
             return;
         }
@@ -728,7 +723,9 @@ public class MainWindow implements ActionListener {
         if (Utils.isMac()) {
             Utils.enableFullScreenMode(f);
         }
-        device.setFullScreenWindow(f);
+        if (!Consts.sFLAG_DEBUG_MODE) {
+            device.setFullScreenWindow(f);
+        }
 
         // Kick-off worker
         worker.execute();
@@ -771,13 +768,37 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
     }
 
+    private void waitForNotify(int pauseTime) throws InterruptedException {
+        if (!Consts.sFLAG_DEBUG_MODE) {
+            synchronized(lock) {
+                lock.wait();
+            }
+        } else {
+            if (pauseTime < 0) {
+                Thread.currentThread().sleep(300);
+            } else {
+                Thread.currentThread().sleep(pauseTime * 1000);
+            }
+        }
+    }
+
+    ArrayList<CommandBase> mDebugCommandList = new ArrayList<CommandBase>();
+    private void addCommandToDebug(CommandBase cmd) {
+        if (cmd != null) {
+            mDebugCommandList.add(cmd);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     protected Void doInBackground() throws Exception {
-        if (serialPort == null || !serialPort.isOpened()) {
-            return null;
+        if (!Consts.sFLAG_DEBUG_MODE) {
+            if (serialPort == null || !serialPort.isOpened()) {
+                System.out.println("No opened serialPort: " + serialPort);
+                return null;
+            }
+            serialPort.addEventListener(this);
         }
-        serialPort.addEventListener(this);
 
         int i;
         int total = root.getNumChildren();
@@ -792,10 +813,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
         }
         commandsList.clear();
 
@@ -804,131 +822,98 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         panel.repaint();
 
         cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generatePauseCommand(30);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generatePauseCommand(30);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
 
         // Get ready to exposure for base layer
         commandsList = PrinterScriptFactory.generateCommandForExpoBase();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
         }
         commandsList.clear();
 
+        int upSteps = printingInfo.upLiftSteps;
+
+        // uplift for base
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
+        processCommand(cmd);
+
         // exposure base layer
-        panel.setBackground(Color.WHITE);
-        panel.repaint();
+        element = children.get(0);
+        publish(element);
+
         cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.baseExpoTimeInSeconds);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
-//        Thread.sleep(300);
-        panel.setBackground(Color.BLACK);
-        panel.repaint();
-        cmd = PrinterScriptFactory.generatePauseCommand(5);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd, printingInfo.baseExpoTimeInSeconds);
+
+        publish(circle);
+        cmd = PrinterScriptFactory.generatePauseCommand(2);
+        processCommand(cmd);
 
         // loop layers
         int layerSteps = printingInfo.getStepsPerLayer();
 
-        int upSteps = printingInfo.upLiftSteps;
         int downSteps = upSteps - layerSteps;
-        for (i = 0; i < total; i++) {
+        for (i = 1; i < total; i++) {
             // Go up 3 layer height
-//            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 3 * layerSteps);
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-//            Thread.sleep(300);
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
 
             // Go down 2 layer height
-//            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 2 * layerSteps);
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-//            Thread.sleep(300);
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
 
             // Exposure layer
             element = children.get(i);
             publish(element);
             cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.layerExpoTimeInSeconds);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-//            Thread.sleep(300);
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd, printingInfo.layerExpoTimeInSeconds);
 
             publish(circle);
             cmd = PrinterScriptFactory.generatePauseCommand(2);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-//            Thread.sleep(300);
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
         }
 
         // Turn off projector
         cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generatePauseCommand(1);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
+
         cmd = PrinterScriptFactory.generatePauseCommand(30);
-        SerialUtils.writeToPort(serialPort, cmd.getCommand());
-        synchronized(lock) {
-            lock.wait();
-        }
+        processCommand(cmd);
 
         // Return to home again
         commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
         for (i = 0; i < commandsList.size(); i++) {
             cmd = commandsList.get(i);
-            SerialUtils.writeToPort(serialPort, cmd.getCommand());
-            synchronized(lock) {
-                lock.wait();
-            }
+            processCommand(cmd);
         }
         commandsList.clear();
 
         return null;
+    }
+
+    private void processCommand(CommandBase cmd) throws InterruptedException {
+        processCommand(cmd, -1);
+    }
+
+    private void processCommand(CommandBase cmd, int pauseTime) throws InterruptedException {
+        addCommandToDebug(cmd);
+        SerialUtils.writeToPort(serialPort, cmd.getCommand());
+        waitForNotify(pauseTime);
     }
 
     @Override
@@ -941,7 +926,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
         SVGElement element = trunks.get(0);
         panel.replaceLayerSVG(element);
-        System.out.println("Printing " + element.getId());
+        System.out.println("Time:" + System.currentTimeMillis() / 1000 + ", Printing " + element.getId());
     }
 
     @Override
@@ -956,6 +941,11 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             e.printStackTrace();
         }
         serialPort = null;
+        if (mDebugCommandList.size() > 0) {
+            for (CommandBase cmd : mDebugCommandList) {
+                System.out.println(cmd.getCommand());
+            }
+        }
     }
 
     public void serialEvent(SerialPortEvent event) {
@@ -969,7 +959,6 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                                 lock.notify();
                             }
                         }
-                        System.out.println(feedback);
                     }
                 } catch (SerialPortException ex) {
                     ex.printStackTrace();
@@ -1182,40 +1171,6 @@ class PauseCommand extends CommandBase {
     }
 }
 
-class TankMovement extends CommandBase {
-    public static final int DIRECTION_UP    = 0;
-    public static final int DIRECTION_DOWN  = 1;
-
-    private static final String CODE_DIR_UP     = "02";
-    private static final String CODE_DIR_DOWN   = "03";
-
-    private static final String TANK_COMMAND_PATTERN = "M%s Z%d;";
-    final int direction;
-    final int steps;
-
-    public TankMovement(int _dir, int _steps) {
-        direction = _dir;
-        steps = _steps;
-    }
-
-    @Override
-    public String getCommand() {
-        return String.format(TANK_COMMAND_PATTERN, getCommandCode(), steps);
-    }
-
-    @Override
-    protected String getCommandCode() {
-        switch (direction) {
-            case DIRECTION_DOWN:
-                return CODE_DIR_DOWN;
-            case DIRECTION_UP:
-                return CODE_DIR_UP;
-            default:
-                throw new IllegalArgumentException("Invalid direction code: " + direction);
-        }
-    }
-}
-
 class ProjectorCommand extends CommandBase {
     private static final String PROJECTOR_PATTERN    = "G%s;";
 
@@ -1252,7 +1207,7 @@ class ProjectorCommand extends CommandBase {
  */
 class PrinterScriptFactory {
     public static final int PAUSE_TIME_DEFAULT = 1; // 1 second
-    public static final int RESET_COMMAND_SIZE = 10;
+    public static final int RESET_COMMAND_SIZE = 30;
 //.0025  10 mm / 4000 steps
 // 195 mm
 // 19.5
@@ -1275,15 +1230,11 @@ class PrinterScriptFactory {
     public static List<CommandBase> generateCommandForExpoBase() {
         CommandBase cmd;
         ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
-        for (int i = 1; i < RESET_COMMAND_SIZE; i++) {
+        for (int i = 0; i < RESET_COMMAND_SIZE; i++) {
             cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
             if (cmd != null) {
                 commandsList.add(cmd);
             }
-        }
-        cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 3980);
-        if (cmd != null) {
-            commandsList.add(cmd);
         }
         if (commandsList.size() != RESET_COMMAND_SIZE) {
             System.err.println("Unexpected command with null when preparing exposure base command list");
@@ -1303,15 +1254,6 @@ class PrinterScriptFactory {
 
     public static CommandBase generatePauseCommand(int seconds) {
         CommandBase cmd = new PauseCommand(seconds);
-        if (validateCommand(cmd)) {
-            return cmd;
-        } else {
-            return null;
-        }
-    }
-
-    public static CommandBase generateTankMovement(int dir, int steps) {
-        CommandBase cmd = new TankMovement(dir, steps);
         if (validateCommand(cmd)) {
             return cmd;
         } else {

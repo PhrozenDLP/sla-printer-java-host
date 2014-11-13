@@ -3,12 +3,18 @@ package org.ars.sla3dprinter;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import org.ars.sla3dprinter.util.Consts;
 import org.ars.sla3dprinter.util.Utils;
 import org.ars.sla3dprinter.view.MainWindow;
 
 public class SLA3DPrinter {
 
     public static void main(String[] args) {
+        if (args.length == 1 && "--debug".equals(args[0])) {
+            Consts.sFLAG_DEBUG_MODE = true;
+        }
+        System.out.println("Is debug mode? " + Consts.sFLAG_DEBUG_MODE);
+
         // take the menu bar off the jframe
         System.setProperty("apple.laf.useScreenMenuBar", "true");
 
