@@ -903,6 +903,10 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
         commandsList.clear();
 
+        // Push down for a little bit to avoid hide interrupt
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
+        processCommand(cmd);
+
         return null;
     }
 
