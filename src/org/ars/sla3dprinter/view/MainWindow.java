@@ -694,8 +694,8 @@ public class MainWindow implements ActionListener {
         targetHeight = device.getDisplayMode().getHeight();
 
         // Force not scale
-        int scale = Integer.parseInt(mInputScale.getText());
-        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, Math.round(scale));
+        float scale = Float.parseFloat(mInputScale.getText());
+        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, scale);
         // Load target SVG file for the 3d model
         worker = new ProjectWorker(myPanel, root, mSerialPort, info);
 
@@ -844,7 +844,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         int upSteps = printingInfo.upLiftSteps;
 
         // uplift for base
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
         processCommand(cmd);
 
         // exposure base layer
@@ -988,12 +988,12 @@ class DynamicIconPanel extends JPanel {
     SVGDiagram diagram;
     SVGElement layerElement;
 
-    public DynamicIconPanel(int width, int height, int scale)
+    public DynamicIconPanel(int width, int height, float scale)
     {
         ensureDimensionValid(width, height);
         ensureScaleValid(scale);
 
-        String attribScale = String.format("scale(%d)", scale);
+        String attribScale = String.format("scale(%f)", scale);
         StringReader reader = new StringReader(makeDynamicSVG(width, height, attribScale));
         uri = universe.loadSVG(reader, "myImage");
         diagram = universe.getDiagram(uri);
@@ -1011,7 +1011,7 @@ class DynamicIconPanel extends JPanel {
         }
     }
 
-    private void ensureScaleValid(int scale) {
+    private void ensureScaleValid(float scale) {
         if (scale <= 0) {
             throw new IllegalArgumentException("scale must be greater than 0");
         }
