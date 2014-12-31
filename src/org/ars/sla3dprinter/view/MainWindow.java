@@ -24,6 +24,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +46,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.NumberFormatter;
 
@@ -268,6 +271,23 @@ public class MainWindow implements ActionListener {
         mInputLayerExpo.setFont(mUIFont);
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(130, 100, 80, 30);
+        mInputLayerExpo.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+        });
         mStepMotorPane.add(mInputLayerExpo);
 
         mBtnPlatformUp = new JButton("Up");
@@ -450,7 +470,7 @@ public class MainWindow implements ActionListener {
         lblEstimate.setBounds(6, 99, 120, 30);
         mMiscPane.add(lblEstimate);
 
-        mLblEstimated = new JLabel("0s");
+        mLblEstimated = new JLabel("N/A");
         mLblEstimated.setFont(mUIFont);
         mLblEstimated.setBounds(126, 99, 150, 30);
         mMiscPane.add(mLblEstimated);
@@ -460,9 +480,26 @@ public class MainWindow implements ActionListener {
         mInputBaseExpo = new JTextField("30");
         mInputBaseExpo.setFont(mUIFont);
         mInputBaseExpo.setBounds(171, 59, 80, 30);
+        mInputBaseExpo.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+        });
         mMiscPane.add(mInputBaseExpo);
         mInputBaseExpo.setColumns(10);
-        
+
         JLabel label = new JLabel("ImageScale");
         label.setFont(new Font("Monaco", Font.PLAIN, 14));
         label.setBounds(6, 21, 160, 30);
@@ -626,8 +663,50 @@ public class MainWindow implements ActionListener {
             }
             mLblProject.setText(mSelectedProject.getName());
             mLblProject.setToolTipText(path);
+
+            updateEstimateTime();
         } else {
             System.out.println("No Selection ");
+        }
+    }
+
+    private void updateEstimateTime() {
+        if (mSelectedProject == null) {
+            mLblEstimated.setText("N/A");
+            return;
+        }
+
+        SVGUniverse universe = SVGCache.getSVGUniverse();
+        SVGDiagram diagram = universe.getDiagram(mSelectedProject.toURI());
+        if (diagram == null) {
+            mLblEstimated.setText("N/A");
+            return;
+        }
+        if (diagram != null) {
+            SVGRoot root = diagram.getRoot();
+            int timeInSeconds = 0;
+            try {
+                timeInSeconds += 60;    // Open printer wait
+                timeInSeconds += 60;    // Close printer wait
+
+                // base layer print time
+                timeInSeconds += Integer.parseInt(mInputBaseExpo.getText());
+
+                // each layer print time
+                int layerCount = root.getChildren(new ArrayList()).size();
+                timeInSeconds += layerCount * Integer.parseInt(mInputLayerExpo.getText());
+
+                // Total + 10% seconds for estimate
+                timeInSeconds *= 1.1;
+            } catch (NumberFormatException e) {
+                timeInSeconds = 0;
+            }
+
+            long days = TimeUnit.SECONDS.toDays(timeInSeconds);
+            long hours = TimeUnit.SECONDS.toHours(timeInSeconds) % 24;
+            long minutes = TimeUnit.SECONDS.toMinutes(timeInSeconds) % 60;
+            long seconds = timeInSeconds - days * 86400 - hours * 3600 - minutes * 60;
+            mLblEstimated.setText(String.format("%dd %dh %dm %ds", days, hours, minutes, seconds));
         }
     }
 
