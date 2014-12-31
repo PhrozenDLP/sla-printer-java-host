@@ -67,9 +67,11 @@ import com.kitfox.svg.Circle;
 import com.kitfox.svg.SVGCache;
 import com.kitfox.svg.SVGDiagram;
 import com.kitfox.svg.SVGElement;
+import com.kitfox.svg.SVGElementException;
 import com.kitfox.svg.SVGException;
 import com.kitfox.svg.SVGRoot;
 import com.kitfox.svg.SVGUniverse;
+import com.kitfox.svg.animation.AnimationElement;
 import com.kitfox.svg.app.beans.SVGIcon;
 import com.kitfox.svg.xml.StyleAttribute;
 
@@ -836,6 +838,17 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         root = _root;
         serialPort = _serial;
         printingInfo = info;
+
+        try {
+            circle.addAttribute("id", AnimationElement.AT_XML, "blank-page");
+            circle.addAttribute("cx", AnimationElement.AT_XML, "10");
+            circle.addAttribute("cy", AnimationElement.AT_XML, "10");
+            circle.addAttribute("r", AnimationElement.AT_XML, "10");
+            circle.addAttribute("fill", AnimationElement.AT_XML, Consts.sFLAG_DEBUG_MODE ? "white" : "black");
+        } catch (SVGElementException e) {
+            e.printStackTrace();
+            e.printStackTrace();
+        }
     }
 
     private void ensurePrintingInfoValid(PrintingInfo info) {
