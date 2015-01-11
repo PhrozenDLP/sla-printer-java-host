@@ -770,13 +770,28 @@ public class MainWindow implements ActionListener {
         StyleAttribute width = root.getPresAbsolute("width");
         StyleAttribute height = root.getPresAbsolute("height");
         int targetWidth = device.getDisplayMode().getWidth();
-        float scaleW = targetWidth / width.getFloatValue();
-        int targetHeight = Math.round(height.getFloatValue() * scaleW);
-        targetHeight = device.getDisplayMode().getHeight();
+        int targetHeight = device.getDisplayMode().getHeight();
 
         // Force not scale
         float scale = Float.parseFloat(mInputScale.getText());
-        final DynamicIconPanel myPanel = new DynamicIconPanel(targetWidth, targetHeight, scale);
+        float scaledWidth = scale * width.getFloatValue();
+        float scaledHeight = scale * height.getFloatValue();
+
+        if (scaledWidth > targetWidth || scaledHeight > targetHeight) {
+            JOptionPane.showMessageDialog(f,
+                    "Scale to large! " + scale,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        float imageX = (targetWidth - scaledWidth ) / 2;
+        float imageY = (targetHeight - scaledHeight ) / 2;
+
+        final DynamicIconPanel myPanel =
+                        new DynamicIconPanel(targetWidth, targetHeight,
+                                        Math.round(imageX), Math.round(imageY), scale);
+
         // Load target SVG file for the 3d model
         worker = new ProjectWorker(myPanel, root, mSerialPort, info);
 
@@ -795,6 +810,7 @@ public class MainWindow implements ActionListener {
                 }
             }
         });
+
         f.getContentPane().add(myPanel);
         f.setUndecorated(true);
         f.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -901,43 +917,49 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         List<CommandBase> commandsList;
         CommandBase cmd;
 
-        // Return home
-        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
-            processCommand(cmd);
-        }
-        commandsList.clear();
-
-        // Turn on projector
-        panel.setBackground(Color.BLACK);
-        panel.repaint();
-
-        cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(30);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(30);
-        processCommand(cmd);
-
-        // Get ready to exposure for base layer
-        commandsList = PrinterScriptFactory.generateCommandForExpoBase();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
-            processCommand(cmd);
-        }
-        commandsList.clear();
-
         int upSteps = printingInfo.upLiftSteps;
 
-        // uplift for base
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
-        processCommand(cmd);
+        if (!Consts.sFLAG_DEBUG_MODE) {
+            // Push down for a little bit to avoid hide interrupt
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
+            processCommand(cmd);
+
+            // Return home
+            commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
+            for (i = 0; i < commandsList.size(); i++) {
+                cmd = commandsList.get(i);
+                processCommand(cmd);
+            }
+            commandsList.clear();
+
+            // Turn on projector
+            panel.setBackground(Color.BLACK);
+            panel.repaint();
+
+            cmd = PrinterScriptFactory.generateProjectorCommand(true);
+            processCommand(cmd);
+
+            cmd = PrinterScriptFactory.generatePauseCommand(30);
+            processCommand(cmd);
+
+            cmd = PrinterScriptFactory.generateProjectorCommand(true);
+            processCommand(cmd);
+
+            cmd = PrinterScriptFactory.generatePauseCommand(30);
+            processCommand(cmd);
+
+            // Get ready to exposure for base layer
+            commandsList = PrinterScriptFactory.generateCommandForExpoBase();
+            for (i = 0; i < commandsList.size(); i++) {
+                cmd = commandsList.get(i);
+                processCommand(cmd);
+            }
+            commandsList.clear();
+
+            // uplift for base
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
+            processCommand(cmd);
+        }
 
         // exposure base layer
         element = children.get(0);
@@ -974,30 +996,32 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             processCommand(cmd);
         }
 
-        // Turn off projector
-        cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        processCommand(cmd);
+        if (!Consts.sFLAG_DEBUG_MODE) {
+            // Turn off projector
+            cmd = PrinterScriptFactory.generateProjectorCommand(false);
+            processCommand(cmd);
 
-        cmd = PrinterScriptFactory.generatePauseCommand(1);
-        processCommand(cmd);
+            cmd = PrinterScriptFactory.generatePauseCommand(1);
+            processCommand(cmd);
 
-        cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        processCommand(cmd);
+            cmd = PrinterScriptFactory.generateProjectorCommand(false);
+            processCommand(cmd);
 
-        cmd = PrinterScriptFactory.generatePauseCommand(30);
-        processCommand(cmd);
+            cmd = PrinterScriptFactory.generatePauseCommand(30);
+            processCommand(cmd);
 
-        // Return to home again
-        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
+            // Return to home again
+            commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
+            for (i = 0; i < commandsList.size(); i++) {
+                cmd = commandsList.get(i);
+                processCommand(cmd);
+            }
+            commandsList.clear();
+
+            // Push down for a little bit to avoid hide interrupt
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
             processCommand(cmd);
         }
-        commandsList.clear();
-
-        // Push down for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
-        processCommand(cmd);
 
         return null;
     }
@@ -1080,10 +1104,16 @@ class DynamicIconPanel extends JPanel {
     SVGDiagram diagram;
     SVGElement layerElement;
 
-    public DynamicIconPanel(int width, int height, float scale)
+    int imageX;
+    int imageY;
+
+    public DynamicIconPanel(int width, int height, int _imageX, int _imageY, float scale)
     {
         ensureDimensionValid(width, height);
         ensureScaleValid(scale);
+
+        imageX = _imageX;
+        imageY = _imageY;
 
         String attribScale = String.format("scale(%f)", scale);
         StringReader reader = new StringReader(makeDynamicSVG(width, height, attribScale));
@@ -1118,7 +1148,7 @@ class DynamicIconPanel extends JPanel {
         g.setColor(getBackground());
         g.fillRect(0, 0, width, height);
 
-        icon.paintIcon(this, g, width / 2, height / 2);
+        icon.paintIcon(this, g, imageX, imageY);
     }
 
     private String makeDynamicSVG(int width, int height, String scale)
