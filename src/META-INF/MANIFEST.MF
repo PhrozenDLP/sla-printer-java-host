@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Main-Class: org.ars.sla3dprinter.SLA3DPrinter
+
