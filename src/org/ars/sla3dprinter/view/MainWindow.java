@@ -920,6 +920,12 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         int upSteps = printingInfo.upLiftSteps;
 
         if (!Consts.sFLAG_DEBUG_MODE) {
+            // Push up for a little bit to avoid hide interrupt
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
+            processCommand(cmd);
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
+            processCommand(cmd);
+
             // Push down for a little bit to avoid hide interrupt
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
             processCommand(cmd);
