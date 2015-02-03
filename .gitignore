@@ -7,3 +7,7 @@ bin/*
 
 # VIM files
 *.swp
+
+# intellij files
+.idea/
+.idea/*
