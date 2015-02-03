@@ -11,3 +11,5 @@ bin/*
 # intellij files
 .idea/
 .idea/*
+
+bin
