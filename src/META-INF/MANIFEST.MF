@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
+Class-Path: jssc-2.8.0.jar svgSalamander.jar
 Main-Class: org.ars.sla3dprinter.SLA3DPrinter
 
