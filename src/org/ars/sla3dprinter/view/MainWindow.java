@@ -78,8 +78,6 @@ import com.kitfox.svg.xml.StyleAttribute;
 public class MainWindow implements ActionListener {
     private static final int START_POS_X    = 100;
     private static final int START_POS_Y    = 100;
-    private static final int WIDTH          = 630;
-    private static final int HEIGHT         = 360;
 
     private Vector<String> mCommPorts = new Vector<String>();
     private Vector<String> mCommBauds = new Vector<String>();
@@ -111,8 +109,7 @@ public class MainWindow implements ActionListener {
 
     // UI components for printing config
     private JTextField mInputBaseExpo;
-    private JTextField mInputMm2Steps;
-    private JTextField mInputLayerHeight;
+    private JTextField mInputLayerUm;
     private JTextField mInputLayerExpo;
 
     // UI components for target project
@@ -223,8 +220,7 @@ public class MainWindow implements ActionListener {
             }
         });
         mFrmSla3dPrinter.setTitle("SLA 3D Printer");
-        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, START_POS_X
-                + WIDTH, START_POS_Y + HEIGHT);
+        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 390);
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
@@ -242,37 +238,26 @@ public class MainWindow implements ActionListener {
         mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
         mStepMotorPane.setLayout(null);
 
-        JLabel lblLayerStep = new JLabel("Steps / mm:");
-        lblLayerStep.setFont(mUIFont);
-        lblLayerStep.setBounds(10, 20, 100, 30);
-        mStepMotorPane.add(lblLayerStep);
-
-        JLabel lblLayerHeight = new JLabel("Layer Height(mm):");
+        JLabel lblLayerHeight = new JLabel("Layer Height(um):");
         lblLayerHeight.setFont(mUIFont);
-        lblLayerHeight.setBounds(10, 60, 150, 30);
+        lblLayerHeight.setBounds(6, 23, 150, 30);
         mStepMotorPane.add(lblLayerHeight);
 
         JLabel lblLayerExposure = new JLabel("Exposure(sec):");
         lblLayerExposure.setFont(mUIFont);
-        lblLayerExposure.setBounds(10, 100, 120, 30);
+        lblLayerExposure.setBounds(6, 63, 120, 30);
         mStepMotorPane.add(lblLayerExposure);
 
-        mInputMm2Steps = new JTextField("20");
-        mInputMm2Steps.setFont(mUIFont);
-        mInputMm2Steps.setColumns(10);
-        mInputMm2Steps.setBounds(105, 20, 80, 30);
-        mStepMotorPane.add(mInputMm2Steps);
-
-        mInputLayerHeight = new JTextField("1");
-        mInputLayerHeight.setFont(mUIFont);
-        mInputLayerHeight.setColumns(10);
-        mInputLayerHeight.setBounds(155, 60, 80, 30);
-        mStepMotorPane.add(mInputLayerHeight);
+        mInputLayerUm = new JTextField("1");
+        mInputLayerUm.setFont(mUIFont);
+        mInputLayerUm.setColumns(10);
+        mInputLayerUm.setBounds(151, 23, 80, 30);
+        mStepMotorPane.add(mInputLayerUm);
 
         mInputLayerExpo = new JTextField("30");
         mInputLayerExpo.setFont(mUIFont);
         mInputLayerExpo.setColumns(10);
-        mInputLayerExpo.setBounds(130, 100, 80, 30);
+        mInputLayerExpo.setBounds(126, 63, 80, 30);
         mInputLayerExpo.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
@@ -308,13 +293,13 @@ public class MainWindow implements ActionListener {
         
         JLabel label = new JLabel("Up lift steps:");
         label.setFont(new Font("Monaco", Font.PLAIN, 14));
-        label.setBounds(10, 147, 120, 30);
+        label.setBounds(6, 110, 120, 30);
         mStepMotorPane.add(label);
 
         mInputUpLiftSteps = new JTextField(Integer.toString(Consts.PULL_UP_STEPS));
         mInputUpLiftSteps.setFont(new Font("Monaco", Font.PLAIN, 14));
         mInputUpLiftSteps.setColumns(10);
-        mInputUpLiftSteps.setBounds(130, 148, 80, 30);
+        mInputUpLiftSteps.setBounds(126, 111, 80, 30);
         mStepMotorPane.add(mInputUpLiftSteps);
     }
 
@@ -428,7 +413,7 @@ public class MainWindow implements ActionListener {
         mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mProjectPane.setBounds(368, 320, 350, 100);
+        mProjectPane.setBounds(368, 218, 350, 136);
         mFrmSla3dPrinter.getContentPane().add(mProjectPane);
         mProjectPane.setLayout(null);
 
@@ -439,15 +424,25 @@ public class MainWindow implements ActionListener {
         mProjectPane.add(mLblProject);
 
         mBtnOpenProject = new JButton("Open Project");
-        mBtnOpenProject.setBounds(100, 60, 120, 30);
+        mBtnOpenProject.setBounds(95, 98, 120, 30);
         mBtnOpenProject.setActionCommand(UIAction.OPEN_PROJECT.name());
         mBtnOpenProject.addActionListener(this);
         mProjectPane.add(mBtnOpenProject);
 
         mBtnPrint = new JButton("Print");
-        mBtnPrint.setBounds(220, 60, 120, 30);
+        mBtnPrint.setBounds(221, 98, 120, 30);
         mProjectPane.add(mBtnPrint);
         mBtnPrint.setActionCommand(UIAction.START_PRINT.name());
+
+        JLabel lblEstimate = new JLabel("Progress:");
+        lblEstimate.setBounds(6, 64, 80, 30);
+        mProjectPane.add(lblEstimate);
+        lblEstimate.setFont(mUIFont);
+
+        mLblEstimated = new JLabel("N/A");
+        mLblEstimated.setBounds(85, 64, 150, 30);
+        mProjectPane.add(mLblEstimated);
+        mLblEstimated.setFont(mUIFont);
         mBtnPrint.addActionListener(this);
 
     }
@@ -460,22 +455,12 @@ public class MainWindow implements ActionListener {
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Misc",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mMiscPane.setBounds(6, 258, 350, 162);
+        mMiscPane.setBounds(6, 258, 350, 96);
 
         JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
         lblBaseExposure.setFont(mUIFont);
         lblBaseExposure.setBounds(6, 59, 160, 30);
         mMiscPane.add(lblBaseExposure);
-
-        JLabel lblEstimate = new JLabel("Estimate time:");
-        lblEstimate.setFont(mUIFont);
-        lblEstimate.setBounds(6, 99, 120, 30);
-        mMiscPane.add(lblEstimate);
-
-        mLblEstimated = new JLabel("N/A");
-        mLblEstimated.setFont(mUIFont);
-        mLblEstimated.setBounds(126, 99, 150, 30);
-        mMiscPane.add(mLblEstimated);
 
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
 
@@ -604,8 +589,7 @@ public class MainWindow implements ActionListener {
                   return;
                 }
                 try {
-                    int steps = Integer.parseInt(mInputLayerHeight.getText())
-                            * Integer.parseInt(mInputMm2Steps.getText());
+                    int steps = Integer.parseInt(mInputLayerUm.getText());
                     cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
@@ -618,8 +602,7 @@ public class MainWindow implements ActionListener {
                     return;
                 }
                 try {
-                    int steps = Integer.parseInt(mInputLayerHeight.getText())
-                            * Integer.parseInt(mInputMm2Steps.getText());
+                    int steps = Integer.parseInt(mInputLayerUm.getText());
                     cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
@@ -726,8 +709,7 @@ public class MainWindow implements ActionListener {
         PrintingInfo info = new PrintingInfo();
         info.baseExpoTimeInSeconds = Integer.parseInt(mInputBaseExpo.getText());
         info.layerExpoTimeInSeconds = Integer.parseInt(mInputLayerExpo.getText());
-        info.layerHeightInMms = Integer.parseInt(mInputLayerHeight.getText());
-        info.stepsPerMm = Integer.parseInt(mInputMm2Steps.getText());
+        info.layerHeightInUms = Integer.parseInt(mInputLayerUm.getText());
         info.upLiftSteps = Integer.parseInt(mInputUpLiftSteps.getText());
 
         // 2. Prepare GraphicsDevice
@@ -1214,16 +1196,15 @@ class PrintingInfo {
     int upLiftSteps;
     int baseExpoTimeInSeconds = -1;
     int layerExpoTimeInSeconds = -1;
-    int layerHeightInMms = -1;
-    int stepsPerMm = -1;
+    int layerHeightInUms = -1;
 
     public boolean valid() {
         return baseExpoTimeInSeconds > 0 && layerExpoTimeInSeconds > 0
-            && layerHeightInMms > 0 && stepsPerMm > 0;
+            && layerHeightInUms > 0;
     }
 
     public int getStepsPerLayer() {
-        return layerHeightInMms * stepsPerMm;
+        return layerHeightInUms;  // Future need to load device info for steps per um
     }
 
     @Override
@@ -1231,8 +1212,7 @@ class PrintingInfo {
         StringBuilder sb = new StringBuilder();
         sb.append("BaseExpoTime: ").append(baseExpoTimeInSeconds).append(", ");
         sb.append("LayerExpoTime: ").append(layerExpoTimeInSeconds).append(", ");
-        sb.append("LayerHeight(mm): ").append(layerHeightInMms).append(", ");
-        sb.append("Steps/mm: ").append(stepsPerMm).append(", ");
+        sb.append("LayerHeight(um): ").append(layerHeightInUms).append(", ");
         sb.append("Up Lift Steps: ").append(upLiftSteps);
         return sb.toString();
     }
