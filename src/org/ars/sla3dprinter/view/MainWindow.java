@@ -222,7 +222,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 System.exit(0);
             }
         });
-        mFrmSla3dPrinter.setTitle("SLA 3D Printer");
+        mFrmSla3dPrinter.setTitle("SLA 3D Printer " + Consts.VERSION);
         mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 390);
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
