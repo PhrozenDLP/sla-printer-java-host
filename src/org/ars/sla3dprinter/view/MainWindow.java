@@ -1343,8 +1343,8 @@ class ProjectorCommand extends CommandBase {
  * G04 P(seconds); => delay <br/>
  * G50; => Send power on command <br/>
  * G51; => Send power off command <br/>
- * M02 Z(steps); => rotate tank up <br/>
- * M03 Z(steps); => rotate tank down <br/>
+ * M02 R(rpm); => motor speed (rpm) <br/>
+ * M99; => version info<br/>
  * M100; => this help message <br/>
  * @author jimytc
  */
