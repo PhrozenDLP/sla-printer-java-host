@@ -75,7 +75,7 @@ import com.kitfox.svg.animation.AnimationElement;
 import com.kitfox.svg.app.beans.SVGIcon;
 import com.kitfox.svg.xml.StyleAttribute;
 
-public class MainWindow implements ActionListener {
+public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateListener {
     private static final int START_POS_X    = 100;
     private static final int START_POS_Y    = 100;
 
@@ -440,7 +440,7 @@ public class MainWindow implements ActionListener {
         lblEstimate.setFont(mUIFont);
 
         mLblEstimated = new JLabel("N/A");
-        mLblEstimated.setBounds(85, 64, 150, 30);
+        mLblEstimated.setBounds(85, 64, 256, 30);
         mProjectPane.add(mLblEstimated);
         mLblEstimated.setFont(mUIFont);
         mBtnPrint.addActionListener(this);
@@ -655,6 +655,8 @@ public class MainWindow implements ActionListener {
         }
     }
 
+    private String projectEstimateSuffix;
+
     private void updateEstimateTime() {
         if (mSelectedProject == null) {
             mLblEstimated.setText("N/A");
@@ -670,6 +672,7 @@ public class MainWindow implements ActionListener {
         if (diagram != null) {
             SVGRoot root = diagram.getRoot();
             int timeInSeconds = 0;
+            int layerCount = 0;
             try {
                 timeInSeconds += 60;    // Open printer wait
                 timeInSeconds += 60;    // Close printer wait
@@ -678,7 +681,7 @@ public class MainWindow implements ActionListener {
                 timeInSeconds += Integer.parseInt(mInputBaseExpo.getText());
 
                 // each layer print time
-                int layerCount = root.getChildren(new ArrayList()).size();
+                layerCount = root.getChildren(new ArrayList()).size();
                 timeInSeconds += layerCount * Integer.parseInt(mInputLayerExpo.getText());
 
                 // Total + 10% seconds for estimate
@@ -691,7 +694,8 @@ public class MainWindow implements ActionListener {
             long hours = TimeUnit.SECONDS.toHours(timeInSeconds) % 24;
             long minutes = TimeUnit.SECONDS.toMinutes(timeInSeconds) % 60;
             long seconds = timeInSeconds - days * 86400 - hours * 3600 - minutes * 60;
-            mLblEstimated.setText(String.format("%dd %dh %dm %ds", days, hours, minutes, seconds));
+            projectEstimateSuffix = String.format(Consts.PATTERN_ESTIMATE_PROCESS_SUFFIX, layerCount, days, hours, minutes, seconds);
+            mLblEstimated.setText("0" + projectEstimateSuffix);
         }
     }
 
@@ -775,7 +779,7 @@ public class MainWindow implements ActionListener {
                                         Math.round(imageX), Math.round(imageY), scale);
 
         // Load target SVG file for the 3d model
-        worker = new ProjectWorker(myPanel, root, mSerialPort, info);
+        worker = new ProjectWorker(myPanel, root, mSerialPort, info, this);
 
         myPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "escapeFromPrinting");
@@ -814,11 +818,32 @@ public class MainWindow implements ActionListener {
         JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error",
                 JOptionPane.ERROR_MESSAGE);
     }
+
+    @Override
+    public void onWorkerStarted(int totalLayer) {
+        mLblEstimated.setText(0 + projectEstimateSuffix);
+    }
+
+    @Override
+    public void onLayerExposed(int layer) {
+        mLblEstimated.setText(layer + projectEstimateSuffix);
+    }
+
+    @Override
+    public void onWorkerFinished(int resultCode) {
+    }
 }
 
 class ProjectWorker extends SwingWorker<Void, SVGElement>
-    implements SerialPortEventListener{
+    implements SerialPortEventListener {
 
+    public interface OnWorkerUpdateListener {
+        void onWorkerStarted(int totalLayers);
+        void onLayerExposed(int layer);
+        void onWorkerFinished(int resultCode);
+    }
+
+    private OnWorkerUpdateListener listener;
     private DynamicIconPanel panel;
     private SVGRoot root;
     private SerialPort serialPort;
@@ -829,13 +854,16 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
     private final Object lock = new Object();
 
-    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial, PrintingInfo info) {
+    private int layerIndex = 0;
+
+    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial, PrintingInfo info, OnWorkerUpdateListener _listener) {
         ensurePrintingInfoValid(info);
 
         panel = _panel;
         root = _root;
         serialPort = _serial;
         printingInfo = info;
+        listener = _listener;
 
         try {
             circle.addAttribute("id", AnimationElement.AT_XML, "blank-page");
@@ -965,6 +993,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         int downSteps = upSteps - layerSteps;
         for (i = 1; i < total; i++) {
+            layerIndex = i;
+
             // Go up 3 layer height
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
             processCommand(cmd);
@@ -1034,7 +1064,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
         SVGElement element = trunks.get(0);
         panel.replaceLayerSVG(element);
-        System.out.println("Time:" + System.currentTimeMillis() / 1000 + ", Printing " + element.getId());
+        listener.onLayerExposed(layerIndex);
     }
 
     @Override
@@ -1054,6 +1084,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 System.out.println(cmd.getCommand());
             }
         }
+        listener.onWorkerFinished(0);
     }
 
     public void serialEvent(SerialPortEvent event) {

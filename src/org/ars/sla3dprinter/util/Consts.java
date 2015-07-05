@@ -31,4 +31,6 @@ public class Consts {
     public static final String COMM_BAND_115200 = "115200";
 
     public static final int PULL_UP_STEPS = 2000;
+
+    public static final String PATTERN_ESTIMATE_PROCESS_SUFFIX = "/%d, %dd %dh:%dm:%ds(total)";
 }
