@@ -47,4 +47,6 @@ public class Consts {
     public static final int DEBUG_TIME = 1;
 
     public static final Font APP_FONT = new Font("Monaco", Font.PLAIN, 14);
+
+    public static final int MAX_STEPS_PER_MOVE_COMMAND = 1000;
 }

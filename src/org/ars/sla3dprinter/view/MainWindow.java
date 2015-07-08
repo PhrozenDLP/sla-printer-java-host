@@ -56,11 +56,8 @@ import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 
-import org.ars.sla3dprinter.util.Consts;
+import org.ars.sla3dprinter.util.*;
 import org.ars.sla3dprinter.util.Consts.UIAction;
-import org.ars.sla3dprinter.util.SerialUtils;
-import org.ars.sla3dprinter.util.TextUtils;
-import org.ars.sla3dprinter.util.Utils;
 
 import com.kitfox.svg.Circle;
 import com.kitfox.svg.SVGCache;
@@ -132,15 +129,11 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private NumberFormatter mIntegerInputFormat = new NumberFormatter(
                     new DecimalFormat());
 
-    SVGUniverse mSVGUniverse = SVGCache.getSVGUniverse();
-    SVGDiagram mSelectedSVGDiagram;
-    SVGRoot mSelectedSVGRoot;
-
     private String projectEstimateSuffix;
 
     // FileChooser
     final JFileChooser mFileChooser;
-    private JMenuBar menuBar;
+    private JMenuBar mMenuBar;
 
     {
         JFileChooser fc = new JFileChooser();
@@ -230,11 +223,11 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
 
-        menuBar = new JMenuBar();
-        mFrmSla3dPrinter.setJMenuBar(menuBar);
+        mMenuBar = new JMenuBar();
+        mFrmSla3dPrinter.setJMenuBar(mMenuBar);
 
         JMenu menuPreference = new JMenu("Preference");
-        menuBar.add(menuPreference);
+        mMenuBar.add(menuPreference);
 
         JMenuItem mnitStepsTopToBase = new JMenuItem("BaseLayer correcting");
         mnitStepsTopToBase.setActionCommand(UIAction.PRINTER_PREFERENCE.name());
@@ -889,6 +882,9 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
     private int layerIndex = 0;
 
+    // Debug usage
+    private ArrayList<CommandBase> debugCommandList;
+
     public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial, PrintingInfo info, OnWorkerUpdateListener _listener) {
         ensurePrintingInfoValid(info);
 
@@ -933,11 +929,12 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
     }
 
-    ArrayList<CommandBase> mDebugCommandList = new ArrayList<CommandBase>();
     private void addCommandToDebug(CommandBase cmd) {
+        if (debugCommandList == null) {
+            debugCommandList = new ArrayList<CommandBase>();
+        }
         if (cmd != null) {
-            System.out.println(cmd.getCommand());
-            mDebugCommandList.add(cmd);
+            debugCommandList.add(cmd);
         }
     }
 
@@ -952,6 +949,10 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             serialPort.addEventListener(this);
         }
 
+        // Job start
+        int total = Consts.sFLAG_DEBUG_MODE ? Math.min(6, root.getNumChildren()) : root.getNumChildren();
+        listener.onWorkerStarted(total);
+
         int i;
         List<CommandBase> commandsList;
         CommandBase cmd;
@@ -963,13 +964,13 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         processCommand(cmd);
 
         // Push up for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
 
         // Push down for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
 
         // Return home
@@ -1005,11 +1006,9 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList.clear();
 
         // uplift for base
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
-        processCommand(cmd);
+//        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
+//        processCommand(cmd);
 
-
-        int total = Consts.sFLAG_DEBUG_MODE ? Math.min(6, root.getNumChildren()) : root.getNumChildren();
         List<SVGElement> children = new ArrayList<SVGElement>();
         children = root.getChildren(children);
         SVGElement element;
@@ -1073,8 +1072,10 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         commandsList.clear();
 
         // Push down for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
+        for (i = 0; i < 4; i++) {
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
             processCommand(cmd);
+        }
 
         return null;
     }
@@ -1114,8 +1115,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             e.printStackTrace();
         }
         serialPort = null;
-        if (mDebugCommandList.size() > 0) {
-            for (CommandBase cmd : mDebugCommandList) {
+        if (Consts.sFLAG_DEBUG_MODE && debugCommandList.size() > 0) {
+            for (CommandBase cmd : debugCommandList) {
                 System.out.println(cmd.getCommand());
             }
         }
@@ -1468,43 +1469,36 @@ class MotorCommand extends CommandBase {
  * @author jimytc
  */
 class PrinterScriptFactory {
-    public static final int PAUSE_TIME_DEFAULT = 1; // 1 second
-    public static final int RESET_COMMAND_SIZE = 30;
+    public static final int RESET_COMMAND_SIZE = 120;
 //.0025  10 mm / 4000 steps
 // 195 mm
 // 19.5
     public static List<CommandBase> generateCommandForResetPlatform() {
-        CommandBase cmd;
-        ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
-        final int size = Consts.sFLAG_DEBUG_MODE ? 2 : RESET_COMMAND_SIZE;
-        for (int i = 0; i < size; i++) {
-            cmd = generatePlatformMovement(PlatformMovement.DIRECTION_UP, 4000);
-            if (cmd != null) {
-                commandsList.add(cmd);
-            }
-        }
-        if (commandsList.size() != size) {
-            System.err.println("Unexpected command with null when preparing reset command list");
-            throw new IllegalStateException("Unexpected command with null when preparing reset command list");
-        }
+        int stepsLeft = (Consts.sFLAG_DEBUG_MODE ? 2 : RESET_COMMAND_SIZE) * Consts.MAX_STEPS_PER_MOVE_COMMAND;
+        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.DIRECTION_UP, stepsLeft);
         return commandsList;
     }
 
     public static List<CommandBase> generateCommandForExpoBase() {
-        CommandBase cmd;
-        ArrayList<CommandBase> commandsList = new ArrayList<CommandBase>();
-        final int size = Consts.sFLAG_DEBUG_MODE ? 2 : RESET_COMMAND_SIZE;
-        for (int i = 0; i < size; i++) {
-            cmd = generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, 4000);
-            if (cmd != null) {
-                commandsList.add(cmd);
-            }
-        }
-        if (commandsList.size() != size) {
-            System.err.println("Unexpected command with null when preparing exposure base command list");
-            throw new IllegalStateException("Unexpected command with null when preparing exposure base command list");
-        }
+        int stepsLeft = Consts.sFLAG_DEBUG_MODE ? 2400 : PrefUtils.getBaseLayerStepsFromTop();
+        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.DIRECTION_DOWN, stepsLeft);
         return commandsList;
+    }
+
+    private static List<CommandBase> generateCommandsForMovement(List<CommandBase> list, int direction, int stepsLeft) {
+        if (list == null) list = new ArrayList<CommandBase>();
+
+        CommandBase cmd;
+        for (; stepsLeft > 0;) {
+            int steps = Math.min(stepsLeft, Consts.MAX_STEPS_PER_MOVE_COMMAND);
+            cmd = generatePlatformMovement(direction, steps);
+            if (cmd != null) {
+                list.add(cmd);
+            }
+            stepsLeft -= Consts.MAX_STEPS_PER_MOVE_COMMAND;
+        }
+
+        return list;
     }
 
     public static CommandBase generatePlatformMovement(int dir, int steps) {
@@ -1543,8 +1537,7 @@ class PrinterScriptFactory {
         String strCmd = cmd.getCommand();
         if (TextUtils.isEmpty(strCmd)) return false;
         if (!strCmd.endsWith(";")) {
-            System.err.println("Command not ends with \";\": " + cmd.getClass().getSimpleName());
-            return false;
+            throw new IllegalStateException("Command not ends with \";\": " + cmd.getClass().getSimpleName());
         }
         return true;
     }
