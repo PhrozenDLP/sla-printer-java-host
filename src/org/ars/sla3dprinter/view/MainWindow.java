@@ -74,6 +74,9 @@ import com.kitfox.svg.SVGUniverse;
 import com.kitfox.svg.animation.AnimationElement;
 import com.kitfox.svg.app.beans.SVGIcon;
 import com.kitfox.svg.xml.StyleAttribute;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 
 public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateListener {
     private static final int START_POS_X    = 100;
@@ -139,6 +142,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     // FileChooser
     final JFileChooser mFileChooser;
+    private JMenuBar menuBar;
 
     {
         JFileChooser fc = new JFileChooser();
@@ -223,10 +227,19 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
             }
         });
         mFrmSla3dPrinter.setTitle("SLA 3D Printer " + Consts.VERSION);
-        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 390);
+        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 403);
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
+
+        menuBar = new JMenuBar();
+        mFrmSla3dPrinter.setJMenuBar(menuBar);
+
+        JMenu menuPreference = new JMenu("Preference");
+        menuBar.add(menuPreference);
+
+        JMenuItem mnitStepsTopToBase = new JMenuItem("BaseLayer correctiness");
+        menuPreference.add(mnitStepsTopToBase);
     }
 
     // Step motor pane
