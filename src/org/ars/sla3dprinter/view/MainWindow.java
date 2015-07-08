@@ -2,7 +2,6 @@ package org.ars.sla3dprinter.view;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
@@ -129,7 +128,6 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private JTextField mInputMotorRpm;
 
     // Resource part for images
-    private Font mUIFont = new Font("Monaco", Font.PLAIN, 14);
     private Image mImgRefresh;
     private NumberFormatter mIntegerInputFormat = new NumberFormatter(
                     new DecimalFormat());
@@ -238,7 +236,9 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         JMenu menuPreference = new JMenu("Preference");
         menuBar.add(menuPreference);
 
-        JMenuItem mnitStepsTopToBase = new JMenuItem("BaseLayer correctiness");
+        JMenuItem mnitStepsTopToBase = new JMenuItem("BaseLayer correcting");
+        mnitStepsTopToBase.setActionCommand(UIAction.PRINTER_PREFERENCE.name());
+        mnitStepsTopToBase.addActionListener(this);
         menuPreference.add(mnitStepsTopToBase);
     }
 
@@ -255,23 +255,23 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mStepMotorPane.setLayout(null);
 
         JLabel lblLayerHeight = new JLabel("Layer Height(um):");
-        lblLayerHeight.setFont(mUIFont);
+        lblLayerHeight.setFont(Consts.APP_FONT);
         lblLayerHeight.setBounds(6, 23, 150, 30);
         mStepMotorPane.add(lblLayerHeight);
 
         JLabel lblLayerExposure = new JLabel("Exposure(sec):");
-        lblLayerExposure.setFont(mUIFont);
+        lblLayerExposure.setFont(Consts.APP_FONT);
         lblLayerExposure.setBounds(6, 63, 120, 30);
         mStepMotorPane.add(lblLayerExposure);
 
         mInputLayerUm = new JTextField("1");
-        mInputLayerUm.setFont(mUIFont);
+        mInputLayerUm.setFont(Consts.APP_FONT);
         mInputLayerUm.setColumns(10);
         mInputLayerUm.setBounds(151, 23, 80, 30);
         mStepMotorPane.add(mInputLayerUm);
 
         mInputLayerExpo = new JTextField("30");
-        mInputLayerExpo.setFont(mUIFont);
+        mInputLayerExpo.setFont(Consts.APP_FONT);
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(126, 63, 80, 30);
         mInputLayerExpo.getDocument().addDocumentListener(new DocumentListener() {
@@ -308,23 +308,23 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mStepMotorPane.add(mBtnPlatformDown);
         
         JLabel label = new JLabel("Up lift steps:");
-        label.setFont(new Font("Monaco", Font.PLAIN, 14));
+        label.setFont(Consts.APP_FONT);
         label.setBounds(6, 105, 120, 30);
         mStepMotorPane.add(label);
 
         mInputUpLiftSteps = new JTextField(Integer.toString(Consts.PULL_UP_STEPS));
-        mInputUpLiftSteps.setFont(new Font("Monaco", Font.PLAIN, 14));
+        mInputUpLiftSteps.setFont(Consts.APP_FONT);
         mInputUpLiftSteps.setColumns(10);
         mInputUpLiftSteps.setBounds(126, 105, 80, 30);
         mStepMotorPane.add(mInputUpLiftSteps);
         
         JLabel lblMotorRpm = new JLabel("Motor RPM:");
-        lblMotorRpm.setFont(new Font("Monaco", Font.PLAIN, 14));
+        lblMotorRpm.setFont(Consts.APP_FONT);
         lblMotorRpm.setBounds(6, 147, 91, 30);
         mStepMotorPane.add(lblMotorRpm);
         
         mInputMotorRpm = new JTextField("160");
-        mInputMotorRpm.setFont(new Font("Monaco", Font.PLAIN, 14));
+        mInputMotorRpm.setFont(Consts.APP_FONT);
         mInputMotorRpm.setColumns(10);
         mInputMotorRpm.setBounds(92, 148, 100, 30);
         mStepMotorPane.add(mInputMotorRpm);
@@ -385,7 +385,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mComPortPane.add(mComboBauds);
 
         JLabel lblBaud = new JLabel("Baud(Hz):");
-        lblBaud.setFont(mUIFont);
+        lblBaud.setFont(Consts.APP_FONT);
         lblBaud.setBounds(10, 55, 80, 30);
         mComPortPane.add(lblBaud);
     }
@@ -464,12 +464,12 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         JLabel lblEstimate = new JLabel("Progress:");
         lblEstimate.setBounds(6, 64, 80, 30);
         mProjectPane.add(lblEstimate);
-        lblEstimate.setFont(mUIFont);
+        lblEstimate.setFont(Consts.APP_FONT);
 
         mLblEstimated = new JLabel("N/A");
         mLblEstimated.setBounds(85, 64, 256, 30);
         mProjectPane.add(mLblEstimated);
-        mLblEstimated.setFont(mUIFont);
+        mLblEstimated.setFont(Consts.APP_FONT);
         mBtnPrint.addActionListener(this);
 
     }
@@ -485,14 +485,14 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mMiscPane.setBounds(6, 258, 350, 96);
 
         JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
-        lblBaseExposure.setFont(mUIFont);
+        lblBaseExposure.setFont(Consts.APP_FONT);
         lblBaseExposure.setBounds(6, 59, 160, 30);
         mMiscPane.add(lblBaseExposure);
 
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
 
         mInputBaseExpo = new JTextField("30");
-        mInputBaseExpo.setFont(mUIFont);
+        mInputBaseExpo.setFont(Consts.APP_FONT);
         mInputBaseExpo.setBounds(171, 59, 80, 30);
         mInputBaseExpo.getDocument().addDocumentListener(new DocumentListener() {
 
@@ -515,12 +515,12 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mInputBaseExpo.setColumns(10);
 
         JLabel label = new JLabel("ImageScale");
-        label.setFont(new Font("Monaco", Font.PLAIN, 14));
+        label.setFont(Consts.APP_FONT);
         label.setBounds(6, 21, 160, 30);
         mMiscPane.add(label);
 
         mInputScale = new JTextField("10");
-        mInputScale.setFont(new Font("Monaco", Font.PLAIN, 14));
+        mInputScale.setFont(Consts.APP_FONT);
         mInputScale.setColumns(10);
         mInputScale.setBounds(171, 22, 80, 30);
         mMiscPane.add(mInputScale);
@@ -650,6 +650,10 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 }
                 cmd = PrinterScriptFactory.generateProjectorCommand(false);
                 SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
+                break;
+            case PRINTER_PREFERENCE:
+                PreferenceDialog dialog = new PreferenceDialog(mFrmSla3dPrinter);
+                dialog.setVisible(true);
                 break;
             default:
                 Utils.log("Unknown action: " + action);

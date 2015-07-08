@@ -1,6 +1,10 @@
 package org.ars.sla3dprinter.util;
 
+import java.awt.*;
+
 public class Consts {
+
+    public static final String PREF_NODE_NAME = "org.ars.slaprinter";
 
     public static final String VERSION = "v0.2.1";
     public static final int VERSION_CODE = 201; // "va.b.c -> a * 10000 + b * 100 + c
@@ -21,7 +25,8 @@ public class Consts {
         PLATFORM_UP,
         PLATFORM_DOWN,
         PROJECTOR_ON,
-        PROJECTOR_OFF
+        PROJECTOR_OFF,
+        PRINTER_PREFERENCE
     }
 
     // Comm Bauds
@@ -40,4 +45,6 @@ public class Consts {
     public static final int PROJECTOR_SWITCH_WAITING_TIME = 30;
 
     public static final int DEBUG_TIME = 1;
+
+    public static final Font APP_FONT = new Font("Monaco", Font.PLAIN, 14);
 }

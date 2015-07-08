@@ -4,6 +4,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.ars.sla3dprinter.util.Consts;
+import org.ars.sla3dprinter.util.PrefUtils;
 import org.ars.sla3dprinter.util.Utils;
 import org.ars.sla3dprinter.view.MainWindow;
 
