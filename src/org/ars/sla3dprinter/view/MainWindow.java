@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -116,7 +117,11 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private JLabel mLblProject;
     private JButton mBtnOpenProject;
     private JButton mBtnPrint;
+    private JButton mBtnPauseResume;
     private JLabel mLblEstimated;
+
+    private static final String TITLE_BTN_PAUSE = "Pause";
+    private static final String TITLE_BTN_RESUME = "Resume";
 
     private JButton mBtnProjectorOn;
     private JButton mBtnProjectorOff;
@@ -218,7 +223,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
             }
         });
         mFrmSla3dPrinter.setTitle("SLA 3D Printer " + Consts.VERSION);
-        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 403);
+        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 420);
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
@@ -433,36 +438,42 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mProjectPane.setBounds(368, 218, 350, 136);
+        mProjectPane.setBounds(368, 218, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mProjectPane);
         mProjectPane.setLayout(null);
 
         mLblProject = new JLabel("");
         mLblProject.setHorizontalAlignment(SwingConstants.LEFT);
-        mLblProject.setBounds(6, 22, 335, 30);
+        mLblProject.setBounds(6, 22, 335, 50);
         mLblProject.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         mProjectPane.add(mLblProject);
 
         mBtnOpenProject = new JButton("Open Project");
-        mBtnOpenProject.setBounds(95, 98, 120, 30);
+        mBtnOpenProject.setBounds(6, 77, 120, 30);
         mBtnOpenProject.setActionCommand(UIAction.OPEN_PROJECT.name());
         mBtnOpenProject.addActionListener(this);
         mProjectPane.add(mBtnOpenProject);
 
         mBtnPrint = new JButton("Print");
-        mBtnPrint.setBounds(221, 98, 120, 30);
+        mBtnPrint.setBounds(142, 77, 100, 30);
         mProjectPane.add(mBtnPrint);
         mBtnPrint.setActionCommand(UIAction.START_PRINT.name());
 
         JLabel lblEstimate = new JLabel("Progress:");
-        lblEstimate.setBounds(6, 64, 80, 30);
+        lblEstimate.setBounds(6, 109, 80, 30);
         mProjectPane.add(lblEstimate);
         lblEstimate.setFont(Consts.APP_FONT);
 
         mLblEstimated = new JLabel("N/A");
-        mLblEstimated.setBounds(85, 64, 256, 30);
+        mLblEstimated.setBounds(85, 109, 256, 30);
         mProjectPane.add(mLblEstimated);
         mLblEstimated.setFont(Consts.APP_FONT);
+
+        mBtnPauseResume = new JButton(TITLE_BTN_PAUSE);
+        mBtnPauseResume.setBounds(241, 77, 100, 30);
+        mBtnPauseResume.addActionListener(this);
+        updatePauseResumeButton(false, UIAction.PAUSE_PRINTING);
+        mProjectPane.add(mBtnPauseResume);
         mBtnPrint.addActionListener(this);
 
     }
@@ -475,7 +486,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Misc",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mMiscPane.setBounds(6, 258, 350, 96);
+        mMiscPane.setBounds(6, 258, 350, 110);
 
         JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
         lblBaseExposure.setFont(Consts.APP_FONT);
@@ -648,6 +659,18 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 PreferenceDialog dialog = new PreferenceDialog(mFrmSla3dPrinter);
                 dialog.setVisible(true);
                 break;
+            case PAUSE_PRINTING:
+                if (mWorker != null) {
+                    mWorker.pause();
+                }
+                updatePauseResumeButton(true, UIAction.RESUME_PRINTING);
+                break;
+            case RESUME_PRINTING:
+                if (mWorker != null) {
+                    mWorker.resume();
+                }
+                updatePauseResumeButton(true, UIAction.PAUSE_PRINTING);
+                break;
             default:
                 Utils.log("Unknown action: " + action);
                 break;
@@ -663,7 +686,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 return;
             }
 
-            String path = null;
+            String path;
             try {
                 path = mSelectedProject.getCanonicalPath();
             } catch (IOException ex) {
@@ -721,6 +744,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         }
     }
 
+    private ProjectWorker mWorker;
     private void promptFakeFrame() {
         if (mSelectedProject == null) {
             showErrorDialog("Choose a SVG by \'Open Project\'");
@@ -761,8 +785,6 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         }
 
         // 3. Prepare Worker
-        final ProjectWorker worker;
-
         // Load target SVG file for the 3d model
         SVGUniverse universe = SVGCache.getSVGUniverse();
         SVGDiagram diagram = universe.getDiagram(mSelectedProject.toURI());
@@ -803,7 +825,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                                         Math.round(imageX), Math.round(imageY), scale);
 
         // Load target SVG file for the 3d model
-        worker = new ProjectWorker(myPanel, root, mSerialPort, info, this);
+        mWorker = new ProjectWorker(myPanel, root, mSerialPort, info, this);
 
         myPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "escapeFromPrinting");
@@ -815,8 +837,8 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
             @Override
             public void actionPerformed(ActionEvent e) {
                 f.dispose();
-                if (worker != null) {
-                    worker.cancel(true);
+                if (mWorker != null) {
+                    mWorker.cancel(true);
                 }
             }
         });
@@ -835,14 +857,35 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         }
 
         mBtnPrint.setEnabled(false);
+        updatePauseResumeButton(true, UIAction.PAUSE_PRINTING);
 
         // Kick-off worker
-        worker.execute();
+        mWorker.execute();
     }
 
     private void showErrorDialog(String message) {
         JOptionPane.showMessageDialog(mFrmSla3dPrinter, message, "Error",
                 JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void updatePauseResumeButton(boolean enabled, UIAction action) {
+        String command;
+        String title;
+        switch (action) {
+            case RESUME_PRINTING:
+                title = TITLE_BTN_RESUME;
+                command = UIAction.RESUME_PRINTING.name();
+                break;
+            case PAUSE_PRINTING:
+                title = TITLE_BTN_PAUSE;
+                command = UIAction.PAUSE_PRINTING.name();
+                break;
+            default:
+                throw new IllegalStateException("Incorrect UIAction: " + action);
+        }
+        mBtnPauseResume.setEnabled(enabled);
+        mBtnPauseResume.setText(title);
+        mBtnPauseResume.setActionCommand(command);
     }
 
     @Override
@@ -857,6 +900,8 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     @Override
     public void onWorkerFinished(int resultCode) {
+        mBtnPrint.setEnabled(true);
+        updatePauseResumeButton(false, UIAction.PAUSE_PRINTING);
     }
 }
 
@@ -926,6 +971,23 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             } else {
                 Thread.currentThread().sleep(pauseTime * 1000);
             }
+        }
+    }
+
+    private final Object pauseLock = new Object();
+    private AtomicBoolean pauseFlag = new AtomicBoolean(false);
+
+    public void pause() {
+        synchronized (pauseLock) {
+            System.out.println("Pausing");
+            pauseFlag.set(true);
+        }
+    }
+
+    public void resume() {
+        synchronized (pauseLock) {
+            System.out.println("Resuming");
+            pauseFlag.set(false);
         }
     }
 
@@ -1085,6 +1147,13 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     }
 
     private void processCommand(CommandBase cmd, int pauseTime) throws InterruptedException {
+        if (pauseFlag.get()) {
+            System.out.print("Paused");
+        }
+        while (pauseFlag.get()) {
+            System.out.print(".");
+            Thread.currentThread().sleep(1000);
+        }
         addCommandToDebug(cmd);
         SerialUtils.writeToPort(serialPort, cmd.getCommand());
         waitForNotify(pauseTime);

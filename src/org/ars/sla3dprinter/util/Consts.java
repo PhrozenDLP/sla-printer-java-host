@@ -6,7 +6,7 @@ public class Consts {
 
     public static final String PREF_NODE_NAME = "org.ars.slaprinter";
 
-    public static final String VERSION = "v0.2.1";
+    public static final String VERSION = "v0.3.0";
     public static final int VERSION_CODE = 201; // "va.b.c -> a * 10000 + b * 100 + c
 
     public static boolean sFLAG_DEBUG_MODE = false;
@@ -26,7 +26,9 @@ public class Consts {
         PLATFORM_DOWN,
         PROJECTOR_ON,
         PROJECTOR_OFF,
-        PRINTER_PREFERENCE
+        PRINTER_PREFERENCE,
+        PAUSE_PRINTING,
+        RESUME_PRINTING
     }
 
     // Comm Bauds
