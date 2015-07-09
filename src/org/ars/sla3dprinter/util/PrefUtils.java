@@ -10,7 +10,7 @@ public class PrefUtils {
     private static Preferences sPrefs;
 
     private static final String PREF_BASELAYER_STEPS_FROM_TOP = "pref_baselayer_steps_from_top";
-    private static final int PREF_BASELAYER_STEPS_FROM_TOP_DEFAULT = 40000;
+    private static final int PREF_BASELAYER_STEPS_FROM_TOP_DEFAULT = 120000;
 
     public static Preferences getInstance() {
         if (sPrefs == null) {
