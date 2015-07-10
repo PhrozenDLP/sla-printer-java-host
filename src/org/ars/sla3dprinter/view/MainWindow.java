@@ -625,7 +625,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 } catch (NumberFormatException nfe) {
-                    System.err.println("Invalid number for layer height and stpes");
+                    System.err.println("Invalid number for layer height and steps");
                 }
                 break;
             case PLATFORM_DOWN:
@@ -638,7 +638,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 } catch (NumberFormatException nfe) {
-                    System.err.println("Invalid number for layer height and stpes");
+                    System.err.println("Invalid number for layer height and steps");
                 }
                 break;
             case PROJECTOR_ON:
