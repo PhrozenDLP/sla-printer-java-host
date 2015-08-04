@@ -1088,24 +1088,30 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         // loop layers
         int layerSteps = printingInfo.getStepsPerLayer();
+        int layerExpoTime = printingInfo.getLayerExpoTimeInSeconds();
 
         int downSteps = upSteps - layerSteps;
+        System.out.println(String.format("upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
         for (i = 1; i < total; i++) {
             layerIndex = i;
 
-            // Go up 3 layer height
+            // Go up
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
             processCommand(cmd);
 
-            // Go down 2 layer height
+            // Wait a little bit
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
+
+            // Go down
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
             processCommand(cmd);
 
             // Exposure layer
             element = children.get(i);
             publish(element);
-            cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getLayerExpoTimeInSeconds());
-            processCommand(cmd, printingInfo.getLayerExpoTimeInSeconds());
+            cmd = PrinterScriptFactory.generatePauseCommand(layerExpoTime);
+            processCommand(cmd, layerExpoTime);
 
             publish(circle);
             cmd = PrinterScriptFactory.generatePauseCommand(2);
