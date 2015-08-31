@@ -108,6 +108,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private JButton mBtnVGARefresh;
 
     // UI components for printing config
+    private JTextField mInputBaseLayerNumber;
     private JTextField mInputBaseExpo;
     private JTextField mInputLayerUm;
     private JTextField mInputLayerExpo;
@@ -127,7 +128,6 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private JButton mBtnProjectorOff;
     private JTextField mInputScale;
     private JTextField mInputUpLiftSteps;
-    private JTextField mInputMotorRpm;
 
     // Resource part for images
     private Image mImgRefresh;
@@ -223,7 +223,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
             }
         });
         mFrmSla3dPrinter.setTitle("SLA 3D Printer " + Consts.VERSION);
-        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 420);
+        mFrmSla3dPrinter.setBounds(START_POS_X, START_POS_Y, 730, 451);
         mFrmSla3dPrinter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
@@ -248,7 +248,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mStepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Platform motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mStepMotorPane.setBounds(368, 6, 350, 200);
+        mStepMotorPane.setBounds(368, 6, 350, 150);
         mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
         mStepMotorPane.setLayout(null);
 
@@ -315,17 +315,6 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mInputUpLiftSteps.setColumns(10);
         mInputUpLiftSteps.setBounds(126, 105, 80, 30);
         mStepMotorPane.add(mInputUpLiftSteps);
-        
-        JLabel lblMotorRpm = new JLabel("Motor RPM:");
-        lblMotorRpm.setFont(Consts.APP_FONT);
-        lblMotorRpm.setBounds(6, 147, 91, 30);
-        mStepMotorPane.add(lblMotorRpm);
-        
-        mInputMotorRpm = new JTextField("160");
-        mInputMotorRpm.setFont(Consts.APP_FONT);
-        mInputMotorRpm.setColumns(10);
-        mInputMotorRpm.setBounds(92, 148, 100, 30);
-        mStepMotorPane.add(mInputMotorRpm);
     }
 
     // COM port pane
@@ -438,7 +427,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mProjectPane.setBounds(368, 218, 350, 150);
+        mProjectPane.setBounds(368, 168, 350, 143);
         mFrmSla3dPrinter.getContentPane().add(mProjectPane);
         mProjectPane.setLayout(null);
 
@@ -460,12 +449,12 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mBtnPrint.setActionCommand(UIAction.START_PRINT.name());
 
         JLabel lblEstimate = new JLabel("Progress:");
-        lblEstimate.setBounds(6, 109, 80, 30);
+        lblEstimate.setBounds(6, 107, 80, 30);
         mProjectPane.add(lblEstimate);
         lblEstimate.setFont(Consts.APP_FONT);
 
         mLblEstimated = new JLabel("N/A");
-        mLblEstimated.setBounds(85, 109, 256, 30);
+        mLblEstimated.setBounds(85, 107, 256, 30);
         mProjectPane.add(mLblEstimated);
         mLblEstimated.setFont(Consts.APP_FONT);
 
@@ -486,18 +475,46 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mMiscPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Misc",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mMiscPane.setBounds(6, 258, 350, 110);
-
-        JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
-        lblBaseExposure.setFont(Consts.APP_FONT);
-        lblBaseExposure.setBounds(6, 59, 160, 30);
-        mMiscPane.add(lblBaseExposure);
+        mMiscPane.setBounds(6, 258, 350, 143);
 
         mFrmSla3dPrinter.getContentPane().add(mMiscPane);
 
+        JLabel lblBaseLayerNumber = new JLabel("Base Layer Number:");
+        lblBaseLayerNumber.setFont(Consts.APP_FONT);
+        lblBaseLayerNumber.setBounds(6, 59, 160, 30);
+        mMiscPane.add(lblBaseLayerNumber);
+
+        mInputBaseLayerNumber = new JTextField("1");
+        mInputBaseLayerNumber.setFont(Consts.APP_FONT);
+        mInputBaseLayerNumber.setBounds(178, 59, 80, 30);
+        mInputBaseLayerNumber.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateEstimateTime();
+            }
+        });
+        mMiscPane.add(mInputBaseLayerNumber);
+        mInputBaseLayerNumber.setColumns(10);
+
+        JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
+        lblBaseExposure.setFont(Consts.APP_FONT);
+        lblBaseExposure.setBounds(6, 101, 160, 30);
+        mMiscPane.add(lblBaseExposure);
+
         mInputBaseExpo = new JTextField("30");
         mInputBaseExpo.setFont(Consts.APP_FONT);
-        mInputBaseExpo.setBounds(171, 59, 80, 30);
+        mInputBaseExpo.setBounds(178, 101, 80, 30);
         mInputBaseExpo.getDocument().addDocumentListener(new DocumentListener() {
 
             @Override
@@ -518,15 +535,15 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mMiscPane.add(mInputBaseExpo);
         mInputBaseExpo.setColumns(10);
 
-        JLabel label = new JLabel("ImageScale");
-        label.setFont(Consts.APP_FONT);
-        label.setBounds(6, 21, 160, 30);
-        mMiscPane.add(label);
+        JLabel lblImagescale = new JLabel("ImageScale:");
+        lblImagescale.setFont(Consts.APP_FONT);
+        lblImagescale.setBounds(6, 21, 160, 30);
+        mMiscPane.add(lblImagescale);
 
         mInputScale = new JTextField("10");
         mInputScale.setFont(Consts.APP_FONT);
         mInputScale.setColumns(10);
-        mInputScale.setBounds(171, 22, 80, 30);
+        mInputScale.setBounds(100, 21, 80, 30);
         mMiscPane.add(mInputScale);
     }
 
@@ -723,7 +740,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 timeInSeconds += 60;    // Close printer wait
 
                 // base layer print time
-                timeInSeconds += Integer.parseInt(mInputBaseExpo.getText());
+                timeInSeconds += Integer.parseInt(mInputBaseExpo.getText()) * Integer.parseInt(mInputBaseLayerNumber.getText());
 
                 // each layer print time
                 layerCount = root.getChildren(new ArrayList()).size();
@@ -757,8 +774,8 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
         // 1. Collect printing related data
         PrintingInfo info = new PrintingInfo(
-                Integer.parseInt(mInputMotorRpm.getText()),
                 Integer.parseInt(mInputUpLiftSteps.getText()),
+                Integer.parseInt(mInputBaseLayerNumber.getText()),
                 Integer.parseInt(mInputBaseExpo.getText()),
                 Integer.parseInt(mInputLayerExpo.getText()),
                 Integer.parseInt(mInputLayerUm.getText())
@@ -1021,10 +1038,6 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         int upSteps = printingInfo.getUpLiftSteps();
 
-        // Setup Motor Speed
-        cmd = PrinterScriptFactory.generateMotorSpeedCommand(printingInfo.getMotorSpeed());
-        processCommand(cmd);
-
         // Push up for a little bit to avoid hide interrupt
         cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
@@ -1075,16 +1088,21 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         children = root.getChildren(children);
         SVGElement element;
 
-        // exposure base layer
-        element = children.get(0);
-        publish(element);
+        for (i = 0; i < printingInfo.getBaseLayerNumber(); i++) {
+            // exposure base layer
+            element = children.get(0);
+            publish(element);
 
-        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getBaseExpoTimeInSeconds());
-        processCommand(cmd, printingInfo.getBaseExpoTimeInSeconds());
+            for (int baseLayerExpoTime = printingInfo.getBaseExpoTimeInSeconds(); baseLayerExpoTime > 0; baseLayerExpoTime -= Consts.MAX_EXPOSURE_SECONDS) {
+                int expoTime = baseLayerExpoTime >= Consts.MAX_EXPOSURE_SECONDS ? Consts.MAX_EXPOSURE_SECONDS : baseLayerExpoTime;
+                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
+                processCommand(cmd, expoTime);
+            }
 
-        publish(circle);
-        cmd = PrinterScriptFactory.generatePauseCommand(2);
-        processCommand(cmd);
+            publish(circle);
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
+        }
 
         // loop layers
         int layerSteps = printingInfo.getStepsPerLayer();
@@ -1100,8 +1118,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             processCommand(cmd);
 
             // Wait a little bit
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
-            processCommand(cmd);
+//            cmd = PrinterScriptFactory.generatePauseCommand(2);
+//            processCommand(cmd);
 
             // Go down
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
@@ -1337,15 +1355,15 @@ class DynamicIconPanel extends JPanel {
 class PrintingInfo {
     private final int projectorWaitngTime = Consts.sFLAG_DEBUG_MODE ? Consts.DEBUG_TIME : Consts.PROJECTOR_SWITCH_WAITING_TIME;
 
-    private int motorSpeed;
     private int upLiftSteps;
+    private int baseLayerNumber = 1;
     private int baseExpoTimeInSeconds = -1;
     private int layerExpoTimeInSeconds = -1;
     private int layerHeightInUms = -1;
 
-    public PrintingInfo(int motorSpeed, int upLiftSteps, int baseExpoTimeInSeconds, int layerExpoTimeInSeconds, int layerHeightInUms) {
-        setMotorSpeed(motorSpeed);
+    public PrintingInfo(int upLiftSteps, int baseLayerNumber, int baseExpoTimeInSeconds, int layerExpoTimeInSeconds, int layerHeightInUms) {
         setUpLiftSteps(upLiftSteps);
+        setBaseLayerNumber(baseLayerNumber);
         setBaseExpoTime(baseExpoTimeInSeconds);
         setLayerExpoTime(layerExpoTimeInSeconds);
         setLayerHeight(layerHeightInUms);
@@ -1353,21 +1371,21 @@ class PrintingInfo {
 
     public boolean valid() {
         return baseExpoTimeInSeconds > 0 && layerExpoTimeInSeconds > 0
-            && layerHeightInUms > 0 && motorSpeed > 0;
+            && layerHeightInUms > 0 && baseLayerNumber > 0;
+    }
+
+    public void setBaseLayerNumber(int number) {
+        if (number > 0) {
+            baseLayerNumber = number;
+        }
+    }
+
+    public int getBaseLayerNumber() {
+        return baseLayerNumber;
     }
 
     public int getProjectorWaitngTime() {
         return projectorWaitngTime;
-    }
-
-    public int getMotorSpeed() {
-        return motorSpeed;
-    }
-
-    public void setMotorSpeed(int rpm) {
-        if (rpm > 0) {
-            motorSpeed = rpm;
-        }
     }
 
     public int getUpLiftSteps() {
@@ -1381,7 +1399,8 @@ class PrintingInfo {
     }
 
     public int getBaseExpoTimeInSeconds() {
-        return Consts.sFLAG_DEBUG_MODE ? 1 : baseExpoTimeInSeconds;
+//        return Consts.sFLAG_DEBUG_MODE ? 1 : baseExpoTimeInSeconds;
+        return baseExpoTimeInSeconds;
     }
 
     public void setBaseExpoTime(int seconds) {
@@ -1413,7 +1432,7 @@ class PrintingInfo {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Motor RPM: ").append(motorSpeed).append(", ");
+        sb.append("Base Layer count: ").append(baseLayerNumber).append(", ");
         sb.append("BaseExpoTime: ").append(baseExpoTimeInSeconds).append(", ");
         sb.append("LayerExpoTime: ").append(layerExpoTimeInSeconds).append(", ");
         sb.append("LayerHeight(um): ").append(layerHeightInUms).append(", ");

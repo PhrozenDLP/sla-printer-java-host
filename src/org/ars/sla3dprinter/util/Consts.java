@@ -6,8 +6,8 @@ public class Consts {
 
     public static final String PREF_NODE_NAME = "org.ars.slaprinter";
 
-    public static final String VERSION = "v0.3.1";
-    public static final int VERSION_CODE = 301; // "va.b.c -> a * 10000 + b * 100 + c
+    public static final String VERSION = "v0.3.3";
+    public static final int VERSION_CODE = 303; // "va.b.c -> a * 10000 + b * 100 + c
 
     public static boolean sFLAG_DEBUG_MODE = false;
 
@@ -51,4 +51,6 @@ public class Consts {
     public static final Font APP_FONT = new Font("Monaco", Font.PLAIN, 14);
 
     public static final int MAX_STEPS_PER_MOVE_COMMAND = 1000;
+
+    public static final int MAX_EXPOSURE_SECONDS = 30;
 }
