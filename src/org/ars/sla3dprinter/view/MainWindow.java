@@ -747,7 +747,10 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 timeInSeconds += layerCount * Integer.parseInt(mInputLayerExpo.getText());
 
                 // Motor movement time estimated
-                timeInSeconds += 2 * layerCount * (Integer.parseInt(mInputLayerUm.getText()) + Integer.parseInt(mInputUpLiftSteps.getText()));
+                timeInSeconds +=
+                    2 * layerCount *
+                    (Integer.parseInt(mInputLayerUm.getText()) + Integer.parseInt(mInputUpLiftSteps.getText()))
+                    / 1000;
 
                 // Total + 20% seconds for estimate
                 timeInSeconds *= 1.2;
