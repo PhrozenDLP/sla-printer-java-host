@@ -746,8 +746,11 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 layerCount = root.getChildren(new ArrayList()).size();
                 timeInSeconds += layerCount * Integer.parseInt(mInputLayerExpo.getText());
 
-                // Total + 10% seconds for estimate
-                timeInSeconds *= 1.1;
+                // Motor movement time estimated
+                timeInSeconds += 2 * layerCount * (Integer.parseInt(mInputLayerUm.getText()) + Integer.parseInt(mInputUpLiftSteps.getText()));
+
+                // Total + 20% seconds for estimate
+                timeInSeconds *= 1.2;
             } catch (NumberFormatException e) {
                 timeInSeconds = 0;
             }
@@ -1118,8 +1121,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             processCommand(cmd);
 
             // Wait a little bit
-//            cmd = PrinterScriptFactory.generatePauseCommand(2);
-//            processCommand(cmd);
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
 
             // Go down
             cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
@@ -1128,8 +1131,11 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             // Exposure layer
             element = children.get(i);
             publish(element);
-            cmd = PrinterScriptFactory.generatePauseCommand(layerExpoTime);
-            processCommand(cmd, layerExpoTime);
+            for (int restExpoTime = layerExpoTime; restExpoTime > 0; restExpoTime -= Consts.MAX_EXPOSURE_SECONDS) {
+                int expoTime = restExpoTime >= Consts.MAX_EXPOSURE_SECONDS ? Consts.MAX_EXPOSURE_SECONDS : restExpoTime;
+                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
+                processCommand(cmd, expoTime);
+            }
 
             publish(circle);
             cmd = PrinterScriptFactory.generatePauseCommand(2);
