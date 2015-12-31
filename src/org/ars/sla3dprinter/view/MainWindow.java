@@ -86,26 +86,19 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     private JFrame mFrmSla3dPrinter;
 
-    private JPanel mStepMotorPane;
-
     // UI components for Serial ports
-    private JPanel mComPortPane;
     private String mSelectedPort;
     private SerialPort mSerialPort;
     private JComboBox mComboPorts;
     private JButton mBtnPortOpen;
     private JButton mBtnPortClose;
-    private JButton mBtnPortRefresh;
-    private JComboBox mComboBauds;
 
     // UI components for Platform Motor
     private JButton mBtnPlatformUp;
     private JButton mBtnPlatformDown;
 
     // UI components for VGA display
-    private JPanel mVgaOutputPane;
     private JComboBox mComboVGA;
-    private JButton mBtnVGARefresh;
 
     // UI components for printing config
     private JTextField mInputBaseLayerNumber;
@@ -114,9 +107,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
     private JTextField mInputLayerExpo;
 
     // UI components for target project
-    private JPanel mProjectPane;
     private JLabel mLblProject;
-    private JButton mBtnOpenProject;
     private JButton mBtnPrint;
     private JButton mBtnPauseResume;
     private JLabel mLblEstimated;
@@ -138,7 +129,6 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     // FileChooser
     final JFileChooser mFileChooser;
-    private JMenuBar mMenuBar;
 
     {
         JFileChooser fc = new JFileChooser();
@@ -228,11 +218,11 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mFrmSla3dPrinter.getContentPane().setLayout(null);
         mFrmSla3dPrinter.setResizable(true);
 
-        mMenuBar = new JMenuBar();
-        mFrmSla3dPrinter.setJMenuBar(mMenuBar);
+        JMenuBar menuBar = new JMenuBar();
+        mFrmSla3dPrinter.setJMenuBar(menuBar);
 
         JMenu menuPreference = new JMenu("Preference");
-        mMenuBar.add(menuPreference);
+        menuBar.add(menuPreference);
 
         JMenuItem mnitStepsTopToBase = new JMenuItem("BaseLayer correcting");
         mnitStepsTopToBase.setActionCommand(UIAction.PRINTER_PREFERENCE.name());
@@ -242,33 +232,33 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     // Step motor pane
     private void initPlatformMotorPanel() {
-        mStepMotorPane = new JPanel();
-        mStepMotorPane.setForeground(Color.BLUE);
-        mStepMotorPane.setToolTipText("");
-        mStepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
+        JPanel stepMotorPane = new JPanel();
+        stepMotorPane.setForeground(Color.BLUE);
+        stepMotorPane.setToolTipText("");
+        stepMotorPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Platform motor control",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mStepMotorPane.setBounds(368, 6, 350, 150);
-        mFrmSla3dPrinter.getContentPane().add(mStepMotorPane);
-        mStepMotorPane.setLayout(null);
+        stepMotorPane.setBounds(368, 6, 350, 150);
+        mFrmSla3dPrinter.getContentPane().add(stepMotorPane);
+        stepMotorPane.setLayout(null);
 
         JLabel lblLayerHeight = new JLabel("Layer Height(um):");
         lblLayerHeight.setFont(Consts.APP_FONT);
         lblLayerHeight.setBounds(6, 23, 150, 30);
-        mStepMotorPane.add(lblLayerHeight);
+        stepMotorPane.add(lblLayerHeight);
 
-        JLabel lblLayerExposure = new JLabel("Exposure(sec):");
+        JLabel lblLayerExposure = new JLabel("Exposure(ms):");
         lblLayerExposure.setFont(Consts.APP_FONT);
         lblLayerExposure.setBounds(6, 63, 120, 30);
-        mStepMotorPane.add(lblLayerExposure);
+        stepMotorPane.add(lblLayerExposure);
 
         mInputLayerUm = new JTextField("1");
         mInputLayerUm.setFont(Consts.APP_FONT);
         mInputLayerUm.setColumns(10);
         mInputLayerUm.setBounds(151, 23, 80, 30);
-        mStepMotorPane.add(mInputLayerUm);
+        stepMotorPane.add(mInputLayerUm);
 
-        mInputLayerExpo = new JTextField("30");
+        mInputLayerExpo = new JTextField("30000");
         mInputLayerExpo.setFont(Consts.APP_FONT);
         mInputLayerExpo.setColumns(10);
         mInputLayerExpo.setBounds(126, 63, 80, 30);
@@ -289,180 +279,180 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 updateEstimateTime();
             }
         });
-        mStepMotorPane.add(mInputLayerExpo);
+        stepMotorPane.add(mInputLayerExpo);
 
         mBtnPlatformUp = new JButton("Up");
         mBtnPlatformUp.setBounds(274, 23, 70, 29);
         mBtnPlatformUp.setActionCommand(UIAction.PLATFORM_UP.name());
         mBtnPlatformUp.setEnabled(false);
         mBtnPlatformUp.addActionListener(this);
-        mStepMotorPane.add(mBtnPlatformUp);
+        stepMotorPane.add(mBtnPlatformUp);
 
         mBtnPlatformDown = new JButton("Down");
         mBtnPlatformDown.setBounds(274, 61, 70, 29);
         mBtnPlatformDown.setActionCommand(UIAction.PLATFORM_DOWN.name());
         mBtnPlatformDown.setEnabled(false);
         mBtnPlatformDown.addActionListener(this);
-        mStepMotorPane.add(mBtnPlatformDown);
+        stepMotorPane.add(mBtnPlatformDown);
         
         JLabel label = new JLabel("Up lift steps:");
         label.setFont(Consts.APP_FONT);
         label.setBounds(6, 105, 120, 30);
-        mStepMotorPane.add(label);
+        stepMotorPane.add(label);
 
         mInputUpLiftSteps = new JTextField(Integer.toString(Consts.PULL_UP_STEPS));
         mInputUpLiftSteps.setFont(Consts.APP_FONT);
         mInputUpLiftSteps.setColumns(10);
         mInputUpLiftSteps.setBounds(126, 105, 80, 30);
-        mStepMotorPane.add(mInputUpLiftSteps);
+        stepMotorPane.add(mInputUpLiftSteps);
     }
 
     // COM port pane
     private void initComPortPanel() {
-        mComPortPane = new JPanel();
-        mComPortPane.setBorder(new TitledBorder(new EtchedBorder(
+        JPanel comPortPane = new JPanel();
+        comPortPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Printer conntection",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mComPortPane.setBounds(6, 6, 350, 130);
-        mFrmSla3dPrinter.getContentPane().add(mComPortPane);
-        mComPortPane.setLayout(null);
+        comPortPane.setBounds(6, 6, 350, 130);
+        mFrmSla3dPrinter.getContentPane().add(comPortPane);
+        comPortPane.setLayout(null);
 
         mComboPorts = new JComboBox(mCommPorts);
         mComboPorts.setBounds(5, 20, 290, 30);
-        mComPortPane.add(mComboPorts);
+        comPortPane.add(mComboPorts);
         mComboPorts.insertItemAt("", 0);
         mComboPorts.setSelectedIndex(0);
         mComboPorts.setActionCommand(UIAction.COM_PORT_CHANGE.name());
         mComboPorts.addActionListener(this);
 
-        mBtnPortRefresh = new JButton("R");
-        mBtnPortRefresh.setBounds(300, 20, 30, 30);
+        JButton btnPortRefresh = new JButton("R");
+        btnPortRefresh.setBounds(300, 20, 30, 30);
         if (mImgRefresh != null) {
             ImageIcon icon = new ImageIcon(mImgRefresh.getScaledInstance(20,
                     20, Image.SCALE_SMOOTH));
-            mBtnPortRefresh.setIcon(icon);
-            mBtnPortRefresh.setText("");
+            btnPortRefresh.setIcon(icon);
+            btnPortRefresh.setText("");
         }
-        mBtnPortRefresh.setActionCommand(UIAction.REFRESH_PORT.name());
-        mBtnPortRefresh.addActionListener(this);
-        mComPortPane.add(mBtnPortRefresh);
+        btnPortRefresh.setActionCommand(UIAction.REFRESH_PORT.name());
+        btnPortRefresh.addActionListener(this);
+        comPortPane.add(btnPortRefresh);
 
         mBtnPortOpen = new JButton("Open");
         mBtnPortOpen.setBounds(150, 90, 85, 30);
         mBtnPortOpen.setActionCommand(UIAction.OPEN_PORT.name());
         mBtnPortOpen.addActionListener(this);
-        mComPortPane.add(mBtnPortOpen);
+        comPortPane.add(mBtnPortOpen);
 
         mBtnPortClose = new JButton("Close");
         mBtnPortClose.setBounds(240, 90, 85, 30);
         mBtnPortClose.setActionCommand(UIAction.CLOSE_PORT.name());
         mBtnPortClose.addActionListener(this);
-        mComPortPane.add(mBtnPortClose);
+        comPortPane.add(mBtnPortClose);
 
         boolean hasPorts = mCommPorts.size() != 0;
         mBtnPortOpen.setEnabled(hasPorts);
         mComboPorts.setEnabled(hasPorts);
         mBtnPortClose.setEnabled(false);
 
-        mComboBauds = new JComboBox(mCommBauds);
-        mComboBauds.setSelectedIndex(0);
-        mComboBauds.setEnabled(true);
-        mComboBauds.setBounds(90, 55, 100, 30);
-        mComboBauds.setActionCommand(UIAction.COM_BAUZ_CHANGE.name());
-        mComPortPane.add(mComboBauds);
+        JComboBox comboBauds = new JComboBox(mCommBauds);
+        comboBauds.setSelectedIndex(0);
+        comboBauds.setEnabled(true);
+        comboBauds.setBounds(90, 55, 100, 30);
+        comboBauds.setActionCommand(UIAction.COM_BAUZ_CHANGE.name());
+        comPortPane.add(comboBauds);
 
         JLabel lblBaud = new JLabel("Baud(Hz):");
         lblBaud.setFont(Consts.APP_FONT);
         lblBaud.setBounds(10, 55, 80, 30);
-        mComPortPane.add(lblBaud);
+        comPortPane.add(lblBaud);
     }
 
     // VGA Output section
     private void initVGAOutputPanel() {
-        mVgaOutputPane = new JPanel();
-        mVgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
+        JPanel vgaOutputPane = new JPanel();
+        vgaOutputPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "Projector connection",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mVgaOutputPane.setBounds(6, 150, 350, 96);
-        mFrmSla3dPrinter.getContentPane().add(mVgaOutputPane);
-        mVgaOutputPane.setLayout(null);
+        vgaOutputPane.setBounds(6, 150, 350, 96);
+        mFrmSla3dPrinter.getContentPane().add(vgaOutputPane);
+        vgaOutputPane.setLayout(null);
 
         mComboVGA = new JComboBox(mGraphicDevices);
         mComboVGA.setBounds(5, 20, 290, 30);
         mComboVGA.setSelectedIndex(0);
         mComboVGA.setActionCommand(UIAction.VGA_PORT_CHANGE.name());
-        mVgaOutputPane.add(mComboVGA);
+        vgaOutputPane.add(mComboVGA);
 
-        mBtnVGARefresh = new JButton("R");
-        mBtnVGARefresh.setBounds(300, 20, 30, 30);
+        JButton btnVGARefresh = new JButton("R");
+        btnVGARefresh.setBounds(300, 20, 30, 30);
         if (mImgRefresh != null) {
             ImageIcon icon = new ImageIcon(mImgRefresh.getScaledInstance(20,
                     20, Image.SCALE_SMOOTH));
-            mBtnVGARefresh.setIcon(icon);
-            mBtnVGARefresh.setText("");
+            btnVGARefresh.setIcon(icon);
+            btnVGARefresh.setText("");
         }
-        mBtnVGARefresh.setActionCommand(UIAction.REFRESH_VGA.name());
-        mBtnVGARefresh.addActionListener(this);
-        mVgaOutputPane.add(mBtnVGARefresh);
+        btnVGARefresh.setActionCommand(UIAction.REFRESH_VGA.name());
+        btnVGARefresh.addActionListener(this);
+        vgaOutputPane.add(btnVGARefresh);
 
         mBtnProjectorOn = new JButton("On");
         mBtnProjectorOn.setBounds(178, 62, 55, 29);
         mBtnProjectorOn.setActionCommand(UIAction.PROJECTOR_ON.name());
         mBtnProjectorOn.setEnabled(false);
         mBtnProjectorOn.addActionListener(this);
-        mVgaOutputPane.add(mBtnProjectorOn);
+        vgaOutputPane.add(mBtnProjectorOn);
 
         mBtnProjectorOff = new JButton("Off");
         mBtnProjectorOff.setBounds(232, 62, 63, 29);
         mBtnProjectorOff.setActionCommand(UIAction.PROJECTOR_OFF.name());
         mBtnProjectorOff.setEnabled(false);
         mBtnProjectorOff.addActionListener(this);
-        mVgaOutputPane.add(mBtnProjectorOff);
+        vgaOutputPane.add(mBtnProjectorOff);
     }
 
     // Init Input project panes
     private void initInputProjectPanel() {
-        mProjectPane = new JPanel();
-        mProjectPane.setForeground(Color.BLUE);
-        mProjectPane.setBorder(new TitledBorder(new EtchedBorder(
+        JPanel projectPane = new JPanel();
+        projectPane.setForeground(Color.BLUE);
+        projectPane.setBorder(new TitledBorder(new EtchedBorder(
                 EtchedBorder.LOWERED, null, null), "3D Model projejct",
                 TitledBorder.LEADING, TitledBorder.TOP, null, Color.BLUE));
-        mProjectPane.setBounds(368, 168, 350, 143);
-        mFrmSla3dPrinter.getContentPane().add(mProjectPane);
-        mProjectPane.setLayout(null);
+        projectPane.setBounds(368, 168, 350, 143);
+        mFrmSla3dPrinter.getContentPane().add(projectPane);
+        projectPane.setLayout(null);
 
         mLblProject = new JLabel("");
         mLblProject.setHorizontalAlignment(SwingConstants.LEFT);
         mLblProject.setBounds(6, 22, 335, 50);
         mLblProject.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        mProjectPane.add(mLblProject);
+        projectPane.add(mLblProject);
 
-        mBtnOpenProject = new JButton("Open Project");
-        mBtnOpenProject.setBounds(6, 77, 120, 30);
-        mBtnOpenProject.setActionCommand(UIAction.OPEN_PROJECT.name());
-        mBtnOpenProject.addActionListener(this);
-        mProjectPane.add(mBtnOpenProject);
+        JButton btnOpenProject = new JButton("Open Project");
+        btnOpenProject.setBounds(6, 77, 120, 30);
+        btnOpenProject.setActionCommand(UIAction.OPEN_PROJECT.name());
+        btnOpenProject.addActionListener(this);
+        projectPane.add(btnOpenProject);
 
         mBtnPrint = new JButton("Print");
         mBtnPrint.setBounds(142, 77, 100, 30);
-        mProjectPane.add(mBtnPrint);
+        projectPane.add(mBtnPrint);
         mBtnPrint.setActionCommand(UIAction.START_PRINT.name());
 
         JLabel lblEstimate = new JLabel("Progress:");
         lblEstimate.setBounds(6, 107, 80, 30);
-        mProjectPane.add(lblEstimate);
+        projectPane.add(lblEstimate);
         lblEstimate.setFont(Consts.APP_FONT);
 
         mLblEstimated = new JLabel("N/A");
         mLblEstimated.setBounds(85, 107, 256, 30);
-        mProjectPane.add(mLblEstimated);
+        projectPane.add(mLblEstimated);
         mLblEstimated.setFont(Consts.APP_FONT);
 
         mBtnPauseResume = new JButton(TITLE_BTN_PAUSE);
         mBtnPauseResume.setBounds(241, 77, 100, 30);
         mBtnPauseResume.addActionListener(this);
         updatePauseResumeButton(false, UIAction.PAUSE_PRINTING);
-        mProjectPane.add(mBtnPauseResume);
+        projectPane.add(mBtnPauseResume);
         mBtnPrint.addActionListener(this);
 
     }
@@ -507,12 +497,12 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         mMiscPane.add(mInputBaseLayerNumber);
         mInputBaseLayerNumber.setColumns(10);
 
-        JLabel lblBaseExposure = new JLabel("Base Exposure (sec):");
+        JLabel lblBaseExposure = new JLabel("Base Exposure (ms):");
         lblBaseExposure.setFont(Consts.APP_FONT);
         lblBaseExposure.setBounds(6, 101, 160, 30);
         mMiscPane.add(lblBaseExposure);
 
-        mInputBaseExpo = new JTextField("30");
+        mInputBaseExpo = new JTextField("30000");
         mInputBaseExpo.setFont(Consts.APP_FONT);
         mInputBaseExpo.setBounds(178, 101, 80, 30);
         mInputBaseExpo.getDocument().addDocumentListener(new DocumentListener() {
@@ -638,7 +628,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 }
                 try {
                     int steps = Integer.parseInt(mInputLayerUm.getText());
-                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP
+                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 } catch (NumberFormatException nfe) {
@@ -651,7 +641,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 }
                 try {
                     int steps = Integer.parseInt(mInputLayerUm.getText());
-                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN
+                    cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DOWN
                                     , steps);
                     SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 } catch (NumberFormatException nfe) {
@@ -662,14 +652,14 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
                 if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
                     return;
                 }
-                cmd = PrinterScriptFactory.generateProjectorCommand(true);
+                cmd = PrinterScriptFactory.generateProjectorCommand(ProjectorCommand.Action.ON);
                 SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 break;
             case PROJECTOR_OFF:
                 if (mSerialPort == null || !SerialUtils.isPortAvailable(mSerialPort)) {
                     return;
                 }
-                cmd = PrinterScriptFactory.generateProjectorCommand(false);
+                cmd = PrinterScriptFactory.generateProjectorCommand(ProjectorCommand.Action.OFF);
                 SerialUtils.writeToPort(mSerialPort, cmd.getCommand());
                 break;
             case PRINTER_PREFERENCE:
@@ -733,36 +723,45 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
         }
         if (diagram != null) {
             SVGRoot root = diagram.getRoot();
-            int timeInSeconds = 0;
+            long timeInMillis = 0;
+            int totalLayerCount = 0;
             int layerCount = 0;
             try {
-                timeInSeconds += 60;    // Open printer wait
-                timeInSeconds += 60;    // Close printer wait
+                timeInMillis += 60 * 1000; // Open printer wait
+                timeInMillis += 60 * 1000; // Close printer wait
 
                 // base layer print time
-                timeInSeconds += Integer.parseInt(mInputBaseExpo.getText()) * Integer.parseInt(mInputBaseLayerNumber.getText());
+                totalLayerCount += Integer.parseInt(mInputBaseLayerNumber.getText());
+                timeInMillis    += totalLayerCount
+                                   * Integer.parseInt(mInputBaseExpo.getText()); // unit is ms
 
                 // each layer print time
                 layerCount = root.getChildren(new ArrayList()).size();
-                timeInSeconds += layerCount * Integer.parseInt(mInputLayerExpo.getText());
+                totalLayerCount += layerCount;
+                timeInMillis    += layerCount
+                                   * Integer.parseInt(mInputLayerExpo.getText()); // unit is ms
 
                 // Motor movement time estimated
-                timeInSeconds +=
+                timeInMillis +=
                     2 * layerCount *
-                    (Integer.parseInt(mInputLayerUm.getText()) + Integer.parseInt(mInputUpLiftSteps.getText()))
-                    / 1000;
+                    (Integer.parseInt(mInputLayerUm.getText())
+                            + Integer.parseInt(mInputUpLiftSteps.getText()));
 
                 // Total + 20% seconds for estimate
-                timeInSeconds *= 1.2;
+                timeInMillis *= 1.2;
             } catch (NumberFormatException e) {
-                timeInSeconds = 0;
+                timeInMillis = 0;
             }
 
-            long days = TimeUnit.SECONDS.toDays(timeInSeconds);
-            long hours = TimeUnit.SECONDS.toHours(timeInSeconds) % 24;
-            long minutes = TimeUnit.SECONDS.toMinutes(timeInSeconds) % 60;
-            long seconds = timeInSeconds - days * 86400 - hours * 3600 - minutes * 60;
-            projectEstimateSuffix = String.format(Consts.PATTERN_ESTIMATE_PROCESS_SUFFIX, layerCount, days, hours, minutes, seconds);
+            long days = TimeUnit.MILLISECONDS.toDays(timeInMillis);
+            long hours = TimeUnit.MILLISECONDS.toHours(timeInMillis) % 24;
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(timeInMillis) % 60;
+            long seconds = (timeInMillis / 1000) - days * 86400 - hours * 3600 - minutes * 60;
+            projectEstimateSuffix =
+                    String.format(Consts.PATTERN_ESTIMATE_PROCESS_SUFFIX,
+                                  totalLayerCount,
+                                  days, hours,
+                                  minutes, seconds);
             mLblEstimated.setText("0" + projectEstimateSuffix);
         }
     }
@@ -942,6 +941,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     private SVGRoot root;
     private SerialPort serialPort;
     private PrintingInfo printingInfo;
+    private List<SVGElement> children = new ArrayList<SVGElement>();
 
     // Dummy item for black screen
     private final SVGElement circle = new Circle();
@@ -958,6 +958,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         panel = _panel;
         root = _root;
+        children = root.getChildren(children);
         serialPort = _serial;
         printingInfo = info;
         listener = _listener;
@@ -1023,6 +1024,166 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
     }
 
+    private void resetForExposure() throws Exception {
+        System.out.println("Reset platform to make sure interrupt sensor");
+
+        CommandBase cmd;
+
+        // Push up for a little bit to avoid hide interrupt
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
+        processCommand(cmd);
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
+        processCommand(cmd);
+
+        // Push down for a little bit to avoid hide interrupt
+        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
+        processCommand(cmd);
+    }
+
+    private void movePlatformHome() throws Exception {
+        System.out.println("Move Platform Home");
+
+        // Return home
+        List<CommandBase> commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
+        CommandBase cmd;
+        for (int i = 0; i < commandsList.size(); i++) {
+            cmd = commandsList.get(i);
+            processCommand(cmd);
+        }
+        commandsList.clear();
+    }
+
+    private void sendProjectorPowerCommand(ProjectorCommand.Action action) throws Exception {
+        System.out.println("Sending Projector command: " + action);
+        // Turn on projector
+        panel.setBackground(Color.BLACK);
+        panel.repaint();
+
+        CommandBase cmd;
+        cmd = PrinterScriptFactory.generateProjectorCommand(action);
+        processCommand(cmd);
+
+        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitingTime());
+        processCommand(cmd);
+
+        cmd = PrinterScriptFactory.generateProjectorCommand(action);
+        processCommand(cmd);
+
+        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitingTime());
+        processCommand(cmd);
+    }
+
+    private void printBaseLayer() throws Exception {
+        System.out.println("Printing Base layers");
+
+        List<CommandBase> commandsList;
+        CommandBase cmd;
+
+        // Base Layers
+
+        // prepare info for base layer print
+        int layerSteps = printingInfo.getStepsPerLayer();
+        int upSteps = printingInfo.getUpLiftSteps();
+        int downSteps = upSteps - layerSteps;
+        System.out.println(String.format("Base layers upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
+
+        SVGElement element = children.get(0);
+        for (int i = 0; i < printingInfo.getBaseLayerNumber(); i++) {
+            System.out.println("Printing base layer #" + (i + 1));
+            if (i == 0) {
+                // Get ready to exposure for base layer
+                commandsList = PrinterScriptFactory.generateCommandForExpoBase();
+                for (int j = 0; j < commandsList.size(); j++) {
+                    cmd = commandsList.get(i);
+                    processCommand(cmd);
+                }
+                commandsList.clear();
+
+                // Wait a little bit
+                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                processCommand(cmd);
+            } else {
+                // uplift platform
+                cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, upSteps);
+                processCommand(cmd);
+
+                // Wait a little bit
+                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                processCommand(cmd);
+
+                // down platform
+                cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DOWN, downSteps);
+                processCommand(cmd);
+
+                // Wait a little bit
+                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                processCommand(cmd);
+            }
+
+            // exposure base layer
+            publish(element);
+
+            for (int baseLayerExpoTime = printingInfo.getBaseExpoTimeInMillis();
+                 baseLayerExpoTime > 0;
+                 baseLayerExpoTime -= Consts.MAX_EXPOSURE_MILLIS) {
+
+                int expoTime = baseLayerExpoTime >= Consts.MAX_EXPOSURE_MILLIS ? Consts.MAX_EXPOSURE_MILLIS : baseLayerExpoTime;
+                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
+                processCommand(cmd, expoTime);
+            }
+
+            publish(circle);
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
+        }
+    }
+
+    private void printObject() throws Exception {
+        System.out.println("Printing Object layers");
+
+        CommandBase cmd;
+        SVGElement element;
+
+        // Object layers
+        // loop layers
+        int total = Consts.sFLAG_DEBUG_MODE ? Math.min(6, root.getNumChildren()) : root.getNumChildren();
+        int layerSteps = printingInfo.getStepsPerLayer();
+        int layerExpoTime = printingInfo.getLayerExpoTimeInMillis();
+
+        int upSteps = printingInfo.getUpLiftSteps();
+        int downSteps = upSteps - layerSteps;
+        System.out.println(String.format("Object layers upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
+
+        for (int i = 1; i < total; i++) {
+            layerIndex = i;
+
+            // Go up
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, upSteps);
+            processCommand(cmd);
+
+            // Wait a little bit
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
+
+            // Go down
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DOWN, downSteps);
+            processCommand(cmd);
+
+            // Exposure layer
+            element = children.get(i);
+            publish(element);
+            for (int restExpoTime = layerExpoTime; restExpoTime > 0; restExpoTime -= Consts.MAX_EXPOSURE_MILLIS) {
+                int expoTime = restExpoTime >= Consts.MAX_EXPOSURE_MILLIS ? Consts.MAX_EXPOSURE_MILLIS : restExpoTime;
+                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
+                processCommand(cmd, expoTime);
+            }
+
+            publish(circle);
+            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            processCommand(cmd);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     protected Void doInBackground() throws Exception {
@@ -1038,137 +1199,21 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         int total = Consts.sFLAG_DEBUG_MODE ? Math.min(6, root.getNumChildren()) : root.getNumChildren();
         listener.onWorkerStarted(total);
 
-        int i;
-        List<CommandBase> commandsList;
-        CommandBase cmd;
-
-        int upSteps = printingInfo.getUpLiftSteps();
-
-        // Push up for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
-        processCommand(cmd);
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
-        processCommand(cmd);
-
-        // Push down for a little bit to avoid hide interrupt
-        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
-        processCommand(cmd);
-
-        // Return home
-        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
-            processCommand(cmd);
-        }
-        commandsList.clear();
-
-        // Turn on projector
-        panel.setBackground(Color.BLACK);
-        panel.repaint();
-
-        cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitngTime());
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generateProjectorCommand(true);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitngTime());
-        processCommand(cmd);
-
-        // Get ready to exposure for base layer
-        commandsList = PrinterScriptFactory.generateCommandForExpoBase();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
-            processCommand(cmd);
-        }
-        commandsList.clear();
-
-        // uplift for base
-//        cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, 40);
-//        processCommand(cmd);
-
-        List<SVGElement> children = new ArrayList<SVGElement>();
-        children = root.getChildren(children);
-        SVGElement element;
-
-        for (i = 0; i < printingInfo.getBaseLayerNumber(); i++) {
-            // exposure base layer
-            element = children.get(0);
-            publish(element);
-
-            for (int baseLayerExpoTime = printingInfo.getBaseExpoTimeInSeconds(); baseLayerExpoTime > 0; baseLayerExpoTime -= Consts.MAX_EXPOSURE_SECONDS) {
-                int expoTime = baseLayerExpoTime >= Consts.MAX_EXPOSURE_SECONDS ? Consts.MAX_EXPOSURE_SECONDS : baseLayerExpoTime;
-                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
-                processCommand(cmd, expoTime);
-            }
-
-            publish(circle);
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
-            processCommand(cmd);
-        }
-
-        // loop layers
-        int layerSteps = printingInfo.getStepsPerLayer();
-        int layerExpoTime = printingInfo.getLayerExpoTimeInSeconds();
-
-        int downSteps = upSteps - layerSteps;
-        System.out.println(String.format("upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
-        for (i = 1; i < total; i++) {
-            layerIndex = i;
-
-            // Go up
-            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_UP, upSteps);
-            processCommand(cmd);
-
-            // Wait a little bit
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
-            processCommand(cmd);
-
-            // Go down
-            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, downSteps);
-            processCommand(cmd);
-
-            // Exposure layer
-            element = children.get(i);
-            publish(element);
-            for (int restExpoTime = layerExpoTime; restExpoTime > 0; restExpoTime -= Consts.MAX_EXPOSURE_SECONDS) {
-                int expoTime = restExpoTime >= Consts.MAX_EXPOSURE_SECONDS ? Consts.MAX_EXPOSURE_SECONDS : restExpoTime;
-                cmd = PrinterScriptFactory.generatePauseCommand(expoTime);
-                processCommand(cmd, expoTime);
-            }
-
-            publish(circle);
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
-            processCommand(cmd);
-        }
+        resetForExposure();
+        movePlatformHome();
+        sendProjectorPowerCommand(ProjectorCommand.Action.ON);
+        printBaseLayer();
+        printObject();
 
         // Turn off projector
-        cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitngTime());
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generateProjectorCommand(false);
-        processCommand(cmd);
-
-        cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitngTime());
-        processCommand(cmd);
-
+        sendProjectorPowerCommand(ProjectorCommand.Action.OFF);
         // Return to home again
-        commandsList = PrinterScriptFactory.generateCommandForResetPlatform();
-        for (i = 0; i < commandsList.size(); i++) {
-            cmd = commandsList.get(i);
-            processCommand(cmd);
-        }
-        commandsList.clear();
+        movePlatformHome();
 
         // Push down for a little bit to avoid hide interrupt
-        for (i = 0; i < 4; i++) {
-            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DIRECTION_DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
+        CommandBase cmd;
+        for (int i = 0; i < 4; i++) {
+            cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.DOWN, Consts.MAX_STEPS_PER_MOVE_COMMAND);
             processCommand(cmd);
         }
 
@@ -1366,20 +1411,20 @@ class PrintingInfo {
 
     private int upLiftSteps;
     private int baseLayerNumber = 1;
-    private int baseExpoTimeInSeconds = -1;
-    private int layerExpoTimeInSeconds = -1;
+    private int baseExpoTimeInMillis = -1;
+    private int layerExpoTimeInMillis = -1;
     private int layerHeightInUms = -1;
 
-    public PrintingInfo(int upLiftSteps, int baseLayerNumber, int baseExpoTimeInSeconds, int layerExpoTimeInSeconds, int layerHeightInUms) {
+    public PrintingInfo(int upLiftSteps, int baseLayerNumber, int baseExpoTimeInMillis, int layerExpoTimeInMillis, int layerHeightInUms) {
         setUpLiftSteps(upLiftSteps);
         setBaseLayerNumber(baseLayerNumber);
-        setBaseExpoTime(baseExpoTimeInSeconds);
-        setLayerExpoTime(layerExpoTimeInSeconds);
+        setBaseExpoTime(baseExpoTimeInMillis);
+        setLayerExpoTime(layerExpoTimeInMillis);
         setLayerHeight(layerHeightInUms);
     }
 
     public boolean valid() {
-        return baseExpoTimeInSeconds > 0 && layerExpoTimeInSeconds > 0
+        return baseExpoTimeInMillis > 0 && layerExpoTimeInMillis > 0
             && layerHeightInUms > 0 && baseLayerNumber > 0;
     }
 
@@ -1393,7 +1438,7 @@ class PrintingInfo {
         return baseLayerNumber;
     }
 
-    public int getProjectorWaitngTime() {
+    public int getProjectorWaitingTime() {
         return projectorWaitngTime;
     }
 
@@ -1407,24 +1452,23 @@ class PrintingInfo {
         }
     }
 
-    public int getBaseExpoTimeInSeconds() {
-//        return Consts.sFLAG_DEBUG_MODE ? 1 : baseExpoTimeInSeconds;
-        return baseExpoTimeInSeconds;
+    public int getBaseExpoTimeInMillis() {
+        return Consts.sFLAG_DEBUG_MODE ? Consts.DEBUG_TIME : baseExpoTimeInMillis;
     }
 
-    public void setBaseExpoTime(int seconds) {
-        if (seconds > 0) {
-            baseExpoTimeInSeconds = seconds;
+    public void setBaseExpoTime(int millis) {
+        if (millis > 0) {
+            baseExpoTimeInMillis = millis;
         }
     }
 
-    public int getLayerExpoTimeInSeconds() {
-        return Consts.sFLAG_DEBUG_MODE ? 1 : layerExpoTimeInSeconds;
+    public int getLayerExpoTimeInMillis() {
+        return Consts.sFLAG_DEBUG_MODE ? Consts.DEBUG_TIME : layerExpoTimeInMillis;
     }
 
-    public void setLayerExpoTime(int seconds) {
-        if (seconds > 0) {
-            layerExpoTimeInSeconds = seconds;
+    public void setLayerExpoTime(int millis) {
+        if (millis > 0) {
+            layerExpoTimeInMillis = millis;
         }
     }
 
@@ -1442,8 +1486,8 @@ class PrintingInfo {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Base Layer count: ").append(baseLayerNumber).append(", ");
-        sb.append("BaseExpoTime: ").append(baseExpoTimeInSeconds).append(", ");
-        sb.append("LayerExpoTime: ").append(layerExpoTimeInSeconds).append(", ");
+        sb.append("BaseExpoTime(ms): ").append(baseExpoTimeInMillis).append(", ");
+        sb.append("LayerExpoTime(ms): ").append(layerExpoTimeInMillis).append(", ");
         sb.append("LayerHeight(um): ").append(layerHeightInUms).append(", ");
         sb.append("Up Lift Steps: ").append(upLiftSteps);
         return sb.toString();
@@ -1461,8 +1505,8 @@ abstract class CommandBase {
 }
 
 class PlatformMovement extends CommandBase {
-    public static final int DIRECTION_UP    = 0;
-    public static final int DIRECTION_DOWN  = 1;
+    public static final int UP = 0;
+    public static final int DOWN = 1;
 
     private static final String CODE_DIR_UP     = "02";
     private static final String CODE_DIR_DOWN   = "03";
@@ -1484,9 +1528,9 @@ class PlatformMovement extends CommandBase {
     @Override
     protected String getCommandCode() {
         switch (direction) {
-            case DIRECTION_DOWN:
+            case DOWN:
                 return CODE_DIR_DOWN;
-            case DIRECTION_UP:
+            case UP:
                 return CODE_DIR_UP;
             default:
                 throw new IllegalArgumentException("Invalid direction code: " + direction);
@@ -1498,15 +1542,15 @@ class PauseCommand extends CommandBase {
     private static final String PAUSE_COMMAND_PATTERN = "G%s P%d;";
 
     private static final String CODE_PAUSE = "04";
-    final int pauseTimeInSeconds;
+    final int pauseTimeInMillis;
 
-    public PauseCommand(int _seconds) {
-        pauseTimeInSeconds = _seconds;
+    public PauseCommand(int _millis) {
+        pauseTimeInMillis = _millis;
     }
 
     @Override
     public String getCommand() {
-        return String.format(PAUSE_COMMAND_PATTERN, getCommandCode(), pauseTimeInSeconds);
+        return String.format(PAUSE_COMMAND_PATTERN, getCommandCode(), pauseTimeInMillis);
     }
 
     @Override
@@ -1516,6 +1560,11 @@ class PauseCommand extends CommandBase {
 }
 
 class ProjectorCommand extends CommandBase {
+    enum Action {
+        ON,
+        OFF;
+    }
+
     private static final String PROJECTOR_PATTERN    = "G%s;";
 
     private static final String CODE_ON     = "50";
@@ -1523,8 +1572,18 @@ class ProjectorCommand extends CommandBase {
 
     private final boolean makeOn;
 
-    public ProjectorCommand(boolean _toOn) {
-        makeOn = _toOn;
+    public ProjectorCommand(Action action) {
+        switch (action) {
+            case ON:
+                makeOn = true;
+                break;
+            case OFF:
+                makeOn = false;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown action: " + action);
+        }
+
     }
 
     @Override
@@ -1578,13 +1637,13 @@ class PrinterScriptFactory {
 // 19.5
     public static List<CommandBase> generateCommandForResetPlatform() {
         int stepsLeft = (Consts.sFLAG_DEBUG_MODE ? 2 : RESET_COMMAND_SIZE) * Consts.MAX_STEPS_PER_MOVE_COMMAND;
-        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.DIRECTION_UP, stepsLeft);
+        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.UP, stepsLeft);
         return commandsList;
     }
 
     public static List<CommandBase> generateCommandForExpoBase() {
         int stepsLeft = Consts.sFLAG_DEBUG_MODE ? 2400 : PrefUtils.getBaseLayerStepsFromTop();
-        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.DIRECTION_DOWN, stepsLeft);
+        List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.DOWN, stepsLeft);
         return commandsList;
     }
 
@@ -1622,8 +1681,8 @@ class PrinterScriptFactory {
         }
     }
 
-    public static CommandBase generateProjectorCommand(boolean toOn) {
-        CommandBase cmd = new ProjectorCommand(toOn);
+    public static CommandBase generateProjectorCommand(ProjectorCommand.Action action) {
+        CommandBase cmd = new ProjectorCommand(action);
         if (validateCommand(cmd)) {
             return cmd;
         } else {

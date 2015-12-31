@@ -6,8 +6,8 @@ public class Consts {
 
     public static final String PREF_NODE_NAME = "org.ars.slaprinter";
 
-    public static final String VERSION = "v0.3.5";
-    public static final int VERSION_CODE = 305; // "va.b.c -> a * 10000 + b * 100 + c
+    public static final String VERSION = "v0.4.1";
+    public static final int VERSION_CODE = 401; // "va.b.c -> a * 10000 + b * 100 + c
 
     public static boolean sFLAG_DEBUG_MODE = false;
 
@@ -44,13 +44,13 @@ public class Consts {
 
     public static final String PATTERN_ESTIMATE_PROCESS_SUFFIX = "/%d, %dd %dh:%dm:%ds(total)";
 
-    public static final int PROJECTOR_SWITCH_WAITING_TIME = 30;
+    public static final int PROJECTOR_SWITCH_WAITING_TIME = 30 * 1000;
 
-    public static final int DEBUG_TIME = 1;
+    public static final int DEBUG_TIME = 1 * 1000;
 
     public static final Font APP_FONT = new Font("Monaco", Font.PLAIN, 14);
 
     public static final int MAX_STEPS_PER_MOVE_COMMAND = 1000;
 
-    public static final int MAX_EXPOSURE_SECONDS = 30;
+    public static final int MAX_EXPOSURE_MILLIS = 30 * 1000;
 }
