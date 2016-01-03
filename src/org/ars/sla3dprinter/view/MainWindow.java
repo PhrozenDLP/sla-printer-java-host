@@ -1631,12 +1631,14 @@ class MotorCommand extends CommandBase {
  * @author jimytc
  */
 class PrinterScriptFactory {
-    public static final int RESET_COMMAND_SIZE = 120;
-//.0025  10 mm / 4000 steps
-// 195 mm
-// 19.5
+    public static final int RESET_COMMAND_SIZE = 60;
+
     public static List<CommandBase> generateCommandForResetPlatform() {
-        int stepsLeft = (Consts.sFLAG_DEBUG_MODE ? 2 : RESET_COMMAND_SIZE) * Consts.MAX_STEPS_PER_MOVE_COMMAND;
+        int stepsLeft = RESET_COMMAND_SIZE * Consts.MAX_STEPS_PER_MOVE_COMMAND
+                + PrefUtils.getBaseLayerStepsFromTop();
+        if (Consts.sFLAG_DEBUG_MODE) {
+            stepsLeft = 2 * Consts.MAX_STEPS_PER_MOVE_COMMAND;
+        }
         List<CommandBase> commandsList = generateCommandsForMovement(null, PlatformMovement.UP, stepsLeft);
         return commandsList;
     }

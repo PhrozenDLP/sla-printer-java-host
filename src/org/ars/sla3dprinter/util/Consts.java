@@ -6,8 +6,8 @@ public class Consts {
 
     public static final String PREF_NODE_NAME = "org.ars.slaprinter";
 
-    public static final String VERSION = "v0.4.1";
-    public static final int VERSION_CODE = 401; // "va.b.c -> a * 10000 + b * 100 + c
+    public static final String VERSION = "v0.4.2";
+    public static final int VERSION_CODE = 402; // "va.b.c -> a * 10000 + b * 100 + c
 
     public static boolean sFLAG_DEBUG_MODE = false;
 
