@@ -968,7 +968,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             circle.addAttribute("cx", AnimationElement.AT_XML, "10");
             circle.addAttribute("cy", AnimationElement.AT_XML, "10");
             circle.addAttribute("r", AnimationElement.AT_XML, "10");
-            circle.addAttribute("fill", AnimationElement.AT_XML, Consts.sFLAG_DEBUG_MODE ? "white" : "black");
+            circle.addAttribute("fill", AnimationElement.AT_XML, "red");
         } catch (SVGElementException e) {
             e.printStackTrace();
             e.printStackTrace();
@@ -1085,7 +1085,9 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         int layerSteps = printingInfo.getStepsPerLayer();
         int upSteps = printingInfo.getUpLiftSteps();
         int downSteps = upSteps - layerSteps;
-        System.out.println(String.format("Base layers upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
+        System.out.println(
+                String.format("Base layers upSteps: %d, layerSteps: %d, downSteps: %d",
+                        upSteps, layerSteps, downSteps));
 
         SVGElement element = children.get(0);
         for (int i = 0; i < printingInfo.getBaseLayerNumber(); i++) {
@@ -1152,7 +1154,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         int upSteps = printingInfo.getUpLiftSteps();
         int downSteps = upSteps - layerSteps;
-        System.out.println(String.format("Object layers upSteps: %d, layerSteps: %d, downSteps: %d", upSteps, layerSteps, downSteps));
+        System.out.println(String.format("Object layers upSteps: %d, layerSteps: %d, downSteps: %d",
+                upSteps, layerSteps, downSteps));
 
         for (int i = 1; i < total; i++) {
             layerIndex = i;
@@ -1201,7 +1204,10 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         resetForExposure();
         movePlatformHome();
+
         sendProjectorPowerCommand(ProjectorCommand.Action.ON);
+        publish(circle);
+
         printBaseLayer();
         printObject();
 
@@ -1415,7 +1421,8 @@ class PrintingInfo {
     private int layerExpoTimeInMillis = -1;
     private int layerHeightInUms = -1;
 
-    public PrintingInfo(int upLiftSteps, int baseLayerNumber, int baseExpoTimeInMillis, int layerExpoTimeInMillis, int layerHeightInUms) {
+    public PrintingInfo(int upLiftSteps, int baseLayerNumber, int baseExpoTimeInMillis,
+                        int layerExpoTimeInMillis, int layerHeightInUms) {
         setUpLiftSteps(upLiftSteps);
         setBaseLayerNumber(baseLayerNumber);
         setBaseExpoTime(baseExpoTimeInMillis);
