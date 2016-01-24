@@ -965,12 +965,11 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
         try {
             circle.addAttribute("id", AnimationElement.AT_XML, "blank-page");
-            circle.addAttribute("cx", AnimationElement.AT_XML, "10");
-            circle.addAttribute("cy", AnimationElement.AT_XML, "10");
+            circle.addAttribute("cx", AnimationElement.AT_XML, "1");
+            circle.addAttribute("cy", AnimationElement.AT_XML, "1");
             circle.addAttribute("r", AnimationElement.AT_XML, "10");
             circle.addAttribute("fill", AnimationElement.AT_XML, "red");
         } catch (SVGElementException e) {
-            e.printStackTrace();
             e.printStackTrace();
         }
     }
@@ -1032,6 +1031,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         // Push up for a little bit to avoid hide interrupt
         cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
+
         cmd = PrinterScriptFactory.generatePlatformMovement(PlatformMovement.UP, Consts.MAX_STEPS_PER_MOVE_COMMAND);
         processCommand(cmd);
 
@@ -1070,6 +1070,11 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         processCommand(cmd);
 
         cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitingTime());
+        processCommand(cmd);
+
+        publish(circle);
+
+        cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
         processCommand(cmd);
     }
 
@@ -1206,7 +1211,6 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         movePlatformHome();
 
         sendProjectorPowerCommand(ProjectorCommand.Action.ON);
-        publish(circle);
 
         printBaseLayer();
         printObject();
@@ -1314,14 +1318,16 @@ class DynamicIconPanel extends JPanel {
 
     int imageX;
     int imageY;
+    float scale;
 
-    public DynamicIconPanel(int width, int height, int _imageX, int _imageY, float scale)
+    public DynamicIconPanel(int width, int height, int _imageX, int _imageY, float _scale)
     {
         ensureDimensionValid(width, height);
-        ensureScaleValid(scale);
+        ensureScaleValid(_scale);
 
         imageX = _imageX;
         imageY = _imageY;
+        scale = _scale;
 
         String attribScale = String.format("scale(%f)", scale);
         StringReader reader = new StringReader(makeDynamicSVG(width, height, attribScale));
