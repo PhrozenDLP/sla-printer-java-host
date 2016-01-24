@@ -165,8 +165,7 @@ public class MainWindow implements ActionListener, ProjectWorker.OnWorkerUpdateL
 
     private void prepareResources() {
         try {
-            mImgRefresh = ImageIO
-                    .read(MainWindow.class
+            mImgRefresh = ImageIO.read(MainWindow.class
                             .getResource("/org/ars/sla3dprinter/images/ic_refresh.png"));
         } catch (IOException ex) {
             Utils.log(ex);
@@ -949,11 +948,12 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     private final Object lock = new Object();
 
     private int layerIndex = 0;
+    private int delayAfterAction = 500;
 
-    // Debug usage
     private ArrayList<CommandBase> debugCommandList;
 
-    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial, PrintingInfo info, OnWorkerUpdateListener _listener) {
+    public ProjectWorker(DynamicIconPanel _panel, SVGRoot _root, SerialPort _serial,
+                         PrintingInfo info, OnWorkerUpdateListener _listener) {
         ensurePrintingInfoValid(info);
 
         panel = _panel;
@@ -1107,7 +1107,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 commandsList.clear();
 
                 // Wait a little bit
-                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
                 processCommand(cmd);
             } else {
                 // uplift platform
@@ -1115,7 +1115,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 processCommand(cmd);
 
                 // Wait a little bit
-                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
                 processCommand(cmd);
 
                 // down platform
@@ -1123,7 +1123,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 processCommand(cmd);
 
                 // Wait a little bit
-                cmd = PrinterScriptFactory.generatePauseCommand(2);
+                cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
                 processCommand(cmd);
             }
 
@@ -1140,7 +1140,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             }
 
             publish(circle);
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
             processCommand(cmd);
         }
     }
@@ -1170,7 +1170,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             processCommand(cmd);
 
             // Wait a little bit
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
             processCommand(cmd);
 
             // Go down
@@ -1187,7 +1187,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             }
 
             publish(circle);
-            cmd = PrinterScriptFactory.generatePauseCommand(2);
+            cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
             processCommand(cmd);
         }
     }
@@ -1195,6 +1195,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     @SuppressWarnings("unchecked")
     @Override
     protected Void doInBackground() throws Exception {
+        delayAfterAction = PrefUtils.getDelayAfterActionDefaultMillis();
+
         if (!Consts.sFLAG_DEBUG_MODE) {
             if (serialPort == null || !serialPort.isOpened()) {
                 System.out.println("No opened serialPort: " + serialPort);
