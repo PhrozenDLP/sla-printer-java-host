@@ -984,16 +984,16 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
     }
 
-    private void waitForNotify(int pauseTime) throws InterruptedException {
+    private void waitForNotify(int pauseMillis) throws InterruptedException {
         if (!Consts.sFLAG_DEBUG_MODE) {
             synchronized(lock) {
                 lock.wait();
             }
         } else {
-            if (pauseTime < 0) {
+            if (pauseMillis < 0) {
                 Thread.currentThread().sleep(300);
             } else {
-                Thread.currentThread().sleep(pauseTime * 1000);
+                Thread.currentThread().sleep(pauseMillis);
             }
         }
     }
