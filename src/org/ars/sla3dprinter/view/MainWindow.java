@@ -51,6 +51,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.NumberFormatter;
 
+import com.kitfox.svg.*;
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
@@ -60,14 +61,6 @@ import jssc.SerialPortList;
 import org.ars.sla3dprinter.util.*;
 import org.ars.sla3dprinter.util.Consts.UIAction;
 
-import com.kitfox.svg.Circle;
-import com.kitfox.svg.SVGCache;
-import com.kitfox.svg.SVGDiagram;
-import com.kitfox.svg.SVGElement;
-import com.kitfox.svg.SVGElementException;
-import com.kitfox.svg.SVGException;
-import com.kitfox.svg.SVGRoot;
-import com.kitfox.svg.SVGUniverse;
 import com.kitfox.svg.animation.AnimationElement;
 import com.kitfox.svg.app.beans.SVGIcon;
 import com.kitfox.svg.xml.StyleAttribute;
@@ -944,6 +937,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
 
     // Dummy item for black screen
     private final SVGElement circle = new Circle();
+    private final SVGElement layerCircle = new Circle();
 
     private final Object lock = new Object();
 
@@ -964,11 +958,21 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         listener = _listener;
 
         try {
-            circle.addAttribute("id", AnimationElement.AT_XML, "blank-page");
+            circle.addAttribute("id", AnimationElement.AT_XML, "blank-page-base");
             circle.addAttribute("cx", AnimationElement.AT_XML, "1");
             circle.addAttribute("cy", AnimationElement.AT_XML, "1");
             circle.addAttribute("r", AnimationElement.AT_XML, "10");
-            circle.addAttribute("fill", AnimationElement.AT_XML, "red");
+            circle.addAttribute("fill", AnimationElement.AT_XML, "rgb(255, 0, 0)");
+        } catch (SVGElementException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            layerCircle.addAttribute("id", AnimationElement.AT_XML, "blank-page-layer");
+            layerCircle.addAttribute("cx", AnimationElement.AT_XML, "1");
+            layerCircle.addAttribute("cy", AnimationElement.AT_XML, "1");
+            layerCircle.addAttribute("r", AnimationElement.AT_XML, "10");
+            layerCircle.addAttribute("fill", AnimationElement.AT_XML, "rgb(10, 0, 0)");
         } catch (SVGElementException e) {
             e.printStackTrace();
         }
@@ -1056,8 +1060,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
     private void sendProjectorPowerCommand(ProjectorCommand.Action action) throws Exception {
         System.out.println("Sending Projector command: " + action);
         // Turn on projector
-        panel.setBackground(Color.BLACK);
-        panel.repaint();
+        // Draw dark circle first before start the projector
+        publish(layerCircle);
 
         CommandBase cmd;
         cmd = PrinterScriptFactory.generateProjectorCommand(action);
@@ -1072,7 +1076,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         cmd = PrinterScriptFactory.generatePauseCommand(printingInfo.getProjectorWaitingTime());
         processCommand(cmd);
 
-        publish(circle);
+        publish(action == ProjectorCommand.Action.ON ? circle : layerCircle);
 
         cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
         processCommand(cmd);
@@ -1139,7 +1143,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 processCommand(cmd, expoTime);
             }
 
-            publish(circle);
+            publish(layerCircle);
             cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
             processCommand(cmd);
         }
@@ -1186,7 +1190,7 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
                 processCommand(cmd, expoTime);
             }
 
-            publish(circle);
+            publish(layerCircle);
             cmd = PrinterScriptFactory.generatePauseCommand(delayAfterAction);
             processCommand(cmd);
         }
@@ -1206,6 +1210,9 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
         }
 
         // Job start
+        panel.setBackground(Color.BLACK);
+        panel.repaint();
+
         int total = Consts.sFLAG_DEBUG_MODE ? Math.min(6, root.getNumChildren()) : root.getNumChildren();
         listener.onWorkerStarted(total);
 
