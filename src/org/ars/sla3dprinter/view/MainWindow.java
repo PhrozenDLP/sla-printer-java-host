@@ -961,8 +961,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             circle.addAttribute("id", AnimationElement.AT_XML, "blank-page-base");
             circle.addAttribute("cx", AnimationElement.AT_XML, "1");
             circle.addAttribute("cy", AnimationElement.AT_XML, "1");
-            circle.addAttribute("r", AnimationElement.AT_XML, "10");
-            circle.addAttribute("fill", AnimationElement.AT_XML, "rgb(255, 0, 0)");
+            circle.addAttribute("r", AnimationElement.AT_XML, "5");
+            circle.addAttribute("fill", AnimationElement.AT_XML, "rgb(0, 0, 0)");
         } catch (SVGElementException e) {
             e.printStackTrace();
         }
@@ -971,8 +971,8 @@ class ProjectWorker extends SwingWorker<Void, SVGElement>
             layerCircle.addAttribute("id", AnimationElement.AT_XML, "blank-page-layer");
             layerCircle.addAttribute("cx", AnimationElement.AT_XML, "1");
             layerCircle.addAttribute("cy", AnimationElement.AT_XML, "1");
-            layerCircle.addAttribute("r", AnimationElement.AT_XML, "10");
-            layerCircle.addAttribute("fill", AnimationElement.AT_XML, "rgb(10, 0, 0)");
+            layerCircle.addAttribute("r", AnimationElement.AT_XML, "5");
+            layerCircle.addAttribute("fill", AnimationElement.AT_XML, "rgb(0, 0, 0)");
         } catch (SVGElementException e) {
             e.printStackTrace();
         }
